@@ -53,7 +53,7 @@ struct SubjectCardView: View {
                 Label(progressSummary.ctaTitle, systemImage: "play.fill")
                     .font(.cqButton)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 48)
             }
             .buttonStyle(.borderedProminent)
             .tint(subject.accentColor)
@@ -61,7 +61,7 @@ struct SubjectCardView: View {
             .disabled(!progressSummary.canStart)
         }
         .padding(20)
-        .frame(width: 180, height: 220)
+        .frame(width: 200, height: 236)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(CQTheme.cardBackground)

@@ -6,9 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject private var progressStore: ProgressStore
 
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
-    @AppStorage("selectedLanguageCode") private var selectedLanguageCode: String = AppLanguage.english.localeIdentifier
     @State private var selectedGrade: GradeBand = .grade2
-    @State private var selectedLanguage: AppLanguage = .english
 
     var body: some View {
         NavigationStack {
@@ -57,19 +55,6 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Language") {
-                    Picker("App Language", selection: $selectedLanguage) {
-                        ForEach(AppLanguage.allCases) { language in
-                            Text(language.displayName).tag(language)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Text("Switch the learning experience to another supported language.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
                 Section("About") {
                     Text("ClassroomQuest is an offline learning adventure designed for kids.")
                 }
@@ -81,10 +66,6 @@ struct SettingsView: View {
             if let stored = GradeBand(rawValue: placementGradeRaw), !placementGradeRaw.isEmpty {
                 selectedGrade = stored
             }
-            selectedLanguage = AppLanguage.from(identifier: selectedLanguageCode)
-        }
-        .onChange(of: selectedLanguage) { newValue in
-            selectedLanguageCode = newValue.localeIdentifier
         }
     }
 }
