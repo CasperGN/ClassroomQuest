@@ -1,6 +1,6 @@
 import SwiftUI
 
-private enum AvatarCategory: String, CaseIterable {
+enum AvatarCategory: String, CaseIterable {
     case clothes = "Clothes"
     case hats = "Hats"
     case pets = "Pets"

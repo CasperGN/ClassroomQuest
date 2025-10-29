@@ -12,7 +12,10 @@ struct CQProgressRing: View {
             Circle()
                 .trim(from: 0, to: max(0.08, min(1, value)))
                 .stroke(style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .fill(color.gradient)
+                .foregroundStyle(AngularGradient(
+                    gradient: Gradient(colors: [color, color.opacity(0.6), color]),
+                    center: .center
+                ))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
             Text("\(Int(value * 100))%")
