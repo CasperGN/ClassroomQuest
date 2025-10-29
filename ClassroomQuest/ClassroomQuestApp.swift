@@ -6,6 +6,7 @@ struct ClassroomQuestApp: App {
     let persistenceController = PersistenceController.shared
     @StateObject private var progressStore: ProgressStore
     @StateObject private var purchaseManager: MockPurchaseManager
+    @AppStorage("selectedLanguageCode") private var selectedLanguageCode: String = AppLanguage.english.localeIdentifier
 
     init() {
         let context = persistenceController.container.viewContext
@@ -19,6 +20,7 @@ struct ClassroomQuestApp: App {
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(progressStore)
                 .environmentObject(purchaseManager)
+                .environment(\.locale, Locale(identifier: selectedLanguageCode))
         }
     }
 }

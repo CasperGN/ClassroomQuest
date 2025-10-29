@@ -154,17 +154,20 @@ struct ContentView: View {
             let focusSkill = progressStore.focusSkill(for: subject)
             let normalizedMastery = normalizedMasteryProgress(for: subject)
             let canStart = purchaseManager.isUnlocked || progress.dailyExerciseCount < 1
-            let completedText = progress.totalSessions > 0 ? " • \(progress.totalSessions) quests completed" : ""
-            let detailPrefix = "Next skill: \(focusSkill.displayName)"
+            let completedText: String = {
+                guard progress.totalSessions > 0 else { return "" }
+                return String(localized: " • \(progress.totalSessions) quests completed", comment: "Suffix showing how many quests the learner completed today")
+            }()
+            let detailPrefix = String(localized: "Next skill: \(focusSkill.displayName)", comment: "Label describing the next focus skill")
 
             if canStart {
                 if purchaseManager.isUnlocked {
-                    let detail = "Unlimited mode active • \(focusSkill.displayName)"
+                    let detail = String(localized: "Unlimited mode active • \(focusSkill.displayName)", comment: "Detail shown when unlimited mode is active for the current focus skill")
                     return SubjectProgressSummary(
-                        statusText: "Unlimited",
+                        statusText: String(localized: "Unlimited"),
                         detailText: detail,
                         statusTint: subject.accentColor,
-                        ctaTitle: "Start Quest",
+                        ctaTitle: String(localized: "Start Quest"),
                         canStart: true,
                         focusSkillName: focusSkill.displayName,
                         masteryProgress: normalizedMastery,
@@ -173,10 +176,10 @@ struct ContentView: View {
                 } else {
                     let detail = detailPrefix + completedText
                     return SubjectProgressSummary(
-                        statusText: "Ready",
+                        statusText: String(localized: "Ready"),
                         detailText: detail,
                         statusTint: subject.accentColor,
-                        ctaTitle: "Start Quest",
+                        ctaTitle: String(localized: "Start Quest"),
                         canStart: true,
                         focusSkillName: focusSkill.displayName,
                         masteryProgress: normalizedMastery,
@@ -185,10 +188,10 @@ struct ContentView: View {
                 }
             } else {
                 return SubjectProgressSummary(
-                    statusText: "Done",
-                    detailText: "You've completed today's quest. See you tomorrow!",
+                    statusText: String(localized: "Done"),
+                    detailText: String(localized: "You've completed today's quest. See you tomorrow!"),
                     statusTint: CQTheme.yellowAccent,
-                    ctaTitle: "All Done",
+                    ctaTitle: String(localized: "All Done"),
                     canStart: false,
                     focusSkillName: focusSkill.displayName,
                     masteryProgress: normalizedMastery,
@@ -197,12 +200,12 @@ struct ContentView: View {
             }
         } catch {
             return SubjectProgressSummary(
-                statusText: "Loading",
-                detailText: "Preparing your quest...",
+                statusText: String(localized: "Loading"),
+                detailText: String(localized: "Hang tight while we fetch your progress."),
                 statusTint: CQTheme.textSecondary,
-                ctaTitle: "Start",
+                ctaTitle: String(localized: "Start Quest"),
                 canStart: false,
-                focusSkillName: "Loading",
+                focusSkillName: subject.displayName,
                 masteryProgress: 0,
                 starRating: 0
             )

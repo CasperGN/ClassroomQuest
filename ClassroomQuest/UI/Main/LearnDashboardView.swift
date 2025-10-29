@@ -17,6 +17,8 @@ struct LearnDashboardView: View {
     let onUpgrade: () -> Void
     let onShowSettings: () -> Void
 
+    private let horizontalPadding: CGFloat = 20
+
     var body: some View {
         ZStack(alignment: .top) {
             CQTheme.background
@@ -29,11 +31,13 @@ struct LearnDashboardView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     headerCard
+                        .padding(.horizontal, horizontalPadding)
 
                     Text("Skills to Explore")
                         .font(.cqTitle2)
                         .foregroundStyle(CQTheme.textPrimary)
-                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, horizontalPadding)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
@@ -43,28 +47,15 @@ struct LearnDashboardView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, horizontalPadding)
                         .padding(.bottom, 8)
                     }
 
-                    if let primarySubject = subjectSummaries.first?.subject {
-                        Button(action: { onStartSubject(primarySubject) }) {
-                            Text("Start Practice")
-                                .font(.cqButton)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 64)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(CQTheme.bluePrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .padding(.horizontal, 16)
-                    }
-
-                    HStack(spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible())], spacing: 16) {
                         starBalanceTile
                         unlimitedTile
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, horizontalPadding)
                     .padding(.bottom, 32)
                 }
                 .padding(.top, 24)
@@ -142,7 +133,6 @@ struct LearnDashboardView: View {
                 .fill(CQTheme.cardBackground)
                 .shadow(color: CQTheme.bluePrimary.opacity(0.12), radius: 24, x: 0, y: 16)
         )
-        .padding(.horizontal, 16)
     }
 
     private var starBalanceTile: some View {
@@ -172,7 +162,8 @@ struct LearnDashboardView: View {
             .buttonStyle(.plain)
         }
         .padding(18)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(minHeight: 180, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(CQTheme.cardBackground)
@@ -205,7 +196,8 @@ struct LearnDashboardView: View {
             .buttonStyle(.plain)
         }
         .padding(18)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(minHeight: 180, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(CQTheme.cardBackground)
