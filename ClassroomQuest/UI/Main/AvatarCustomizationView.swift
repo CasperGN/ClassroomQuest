@@ -1,10 +1,15 @@
 import SwiftUI
 
+enum AvatarCategory: String, CaseIterable {
+    case clothes = "Clothes"
+    case hats = "Hats"
+    case pets = "Pets"
+}
+
 struct AvatarCustomizationView: View {
-    private enum Category: String, CaseIterable { case clothes = "Clothes", hats = "Hats", pets = "Pets" }
 
     let starBalance: Int
-    @State private var selectedCategory: Category = .clothes
+    @State private var selectedCategory: AvatarCategory = .clothes
     @State private var equippedItems: Set<String> = []
     @State private var avatarBounce = false
 
@@ -86,7 +91,7 @@ struct AvatarCustomizationView: View {
 
     private var categoryTabs: some View {
         HStack(spacing: 12) {
-            ForEach(Category.allCases, id: \.self) { category in
+            ForEach(AvatarCategory.allCases, id: \.self) { category in
                 Button {
                     selectedCategory = category
                 } label: {
@@ -121,7 +126,7 @@ private struct AvatarItem: Identifiable {
     let name: String
     let emoji: String
     let cost: Int
-    let category: Category
+    let category: AvatarCategory
 
     static let sample: [AvatarItem] = [
         AvatarItem(id: "cape", name: "Hero Cape", emoji: "🦸‍♀️", cost: 25, category: .clothes),

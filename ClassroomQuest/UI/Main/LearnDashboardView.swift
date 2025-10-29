@@ -118,7 +118,14 @@ struct LearnDashboardView: View {
                         .fill(Color.white.opacity(0.3))
                         .overlay(alignment: .leading) {
                             Capsule()
-                                .fill(CQTheme.bluePrimary.gradient)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [CQTheme.bluePrimary, CQTheme.bluePrimary.opacity(0.6)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+
                                 .frame(width: max(geometry.size.width * max(0.05, xpProgress), 24))
                                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: xpProgress)
                         }

@@ -1,6 +1,7 @@
 import SwiftUI
 internal import CoreData
 
+
 struct ParentDashboardView: View {
     @ObservedObject var progressStore: ProgressStore
 
