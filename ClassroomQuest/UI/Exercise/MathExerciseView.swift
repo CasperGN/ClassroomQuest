@@ -16,8 +16,12 @@ struct MathExerciseView: View {
     @State private var currentIndex: Int = 0
     @State private var completed = false
     @State private var submissionError = false
+    @State private var showFeedback = false
+    @State private var lastResult: MathProblemResult?
+    @State private var lastSubmittedAnswer: Int?
 
     private var currentProblem: MathProblem { route.problems[currentIndex] }
+    private var correctAnswerCount: Int { results.filter { $0.isCorrect }.count }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -26,7 +30,7 @@ struct MathExerciseView: View {
             } else {
                 progressHeader
                 problemCard
-                submitButton
+                controlSection
             }
         }
         .padding()
@@ -38,7 +42,10 @@ struct MathExerciseView: View {
         VStack(spacing: 8) {
             Text("Question \(currentIndex + 1) of \(route.problems.count)")
                 .font(.headline)
-            ProgressView(value: Double(currentIndex), total: Double(route.problems.count))
+            ProgressView(
+                value: Double(currentIndex) + (showFeedback ? 1 : 0),
+                total: Double(route.problems.count)
+            )
                 .tint(route.subject.accentColor)
         }
     }
@@ -57,12 +64,15 @@ struct MathExerciseView: View {
             .textFieldStyle(.roundedBorder)
             .font(.title3)
             .multilineTextAlignment(.center)
+            .disabled(showFeedback)
 
             if submissionError {
                 Text("Please enter a number to continue.")
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
+
+            feedbackSection
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -72,15 +82,28 @@ struct MathExerciseView: View {
         )
     }
 
-    private var submitButton: some View {
-        Button(action: submitAnswer) {
-            Text(currentIndex == route.problems.count - 1 ? "Finish" : "Next")
-                .frame(maxWidth: .infinity)
+    @ViewBuilder
+    private var controlSection: some View {
+        if showFeedback {
+            Button(action: advanceAfterFeedback) {
+                Text(currentIndex == route.problems.count - 1 ? "See Results" : "Next Question")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+        } else {
+            Button(action: submitAnswer) {
+                Text("Check Answer")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
         }
-        .buttonStyle(.borderedProminent)
     }
 
     private func submitAnswer() {
+        guard !showFeedback else {
+            advanceAfterFeedback()
+            return
+        }
         submissionError = false
         guard let text = answers[currentProblem.id]?.trimmingCharacters(in: .whitespacesAndNewlines),
               let value = Int(text) else {
@@ -88,8 +111,47 @@ struct MathExerciseView: View {
             return
         }
 
-        let isCorrect = value == currentProblem.correctAnswer
-        results.append(MathProblemResult(problem: currentProblem, isCorrect: isCorrect))
+        let problem = currentProblem
+        let isCorrect = value == problem.correctAnswer
+        let result = MathProblemResult(problem: problem, isCorrect: isCorrect)
+        results.append(result)
+        lastResult = result
+        lastSubmittedAnswer = value
+        showFeedback = true
+    }
+
+    @ViewBuilder
+    private var feedbackSection: some View {
+        if showFeedback, let result = lastResult {
+            VStack(spacing: 12) {
+                Text(result.isCorrect ? "Correct!" : "Not quite.")
+                    .font(.headline)
+                    .foregroundStyle(result.isCorrect ? Color.green : Color.red)
+                if let submitted = lastSubmittedAnswer, !result.isCorrect {
+                    Text("You answered \(submitted). The correct answer is \(result.problem.correctAnswer).")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                } else if result.isCorrect {
+                    Text("Nice work! Keep it up.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(result.isCorrect ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+            )
+        }
+    }
+
+    private func advanceAfterFeedback() {
+        guard let lastProblem = lastResult?.problem else { return }
+        showFeedback = false
+        lastResult = nil
+        lastSubmittedAnswer = nil
+        answers[lastProblem.id] = nil
+        submissionError = false
 
         if currentIndex == route.problems.count - 1 {
             completeSession()
@@ -115,6 +177,9 @@ struct MathExerciseView: View {
             Text("Great work!")
                 .font(.title)
                 .fontWeight(.bold)
+            Text("You answered \(correctAnswerCount) out of \(route.problems.count) correctly.")
+                .font(.headline)
+                .multilineTextAlignment(.center)
             Text("Come back tomorrow for a new quest.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

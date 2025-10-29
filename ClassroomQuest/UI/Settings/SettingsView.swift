@@ -4,7 +4,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var purchaseManager: MockPurchaseManager
     @EnvironmentObject private var progressStore: ProgressStore
-    
+
+    @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
     @State private var selectedGrade: GradeBand = .grade2
 
     var body: some View {
@@ -32,13 +33,13 @@ struct SettingsView: View {
                 }
 
                 Section("Initial Placement") {
+                    if let stored = GradeBand(rawValue: placementGradeRaw), !placementGradeRaw.isEmpty {
+                        Label("Current level: \(stored.displayName)", systemImage: "graduationcap")
+                    }
                     Picker("Grade Band", selection: $selectedGrade) {
-                        Text("Kindergarten").tag(GradeBand.kindergarten)
-                        Text("Grade 1").tag(GradeBand.grade1)
-                        Text("Grade 2").tag(GradeBand.grade2)
-                        Text("Grade 3").tag(GradeBand.grade3)
-                        Text("Grade 4").tag(GradeBand.grade4)
-                        Text("Grade 5").tag(GradeBand.grade5)
+                        ForEach(GradeBand.allCases) { grade in
+                            Text(grade.displayName).tag(grade)
+                        }
                     }
                     .pickerStyle(.menu)
 
@@ -46,6 +47,7 @@ struct SettingsView: View {
                         let profile = PlacementProfile(gradeBand: selectedGrade)
                         do {
                             try progressStore.applyPlacement(profile: profile)
+                            placementGradeRaw = selectedGrade.rawValue
                         } catch {
                             // In a production app, surface an error UI; for now, assert.
                             assertionFailure("Failed to apply placement: \(error)")
@@ -59,6 +61,11 @@ struct SettingsView: View {
             }
             .navigationTitle("Parent Settings")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+        }
+        .onAppear {
+            if let stored = GradeBand(rawValue: placementGradeRaw), !placementGradeRaw.isEmpty {
+                selectedGrade = stored
+            }
         }
     }
 }

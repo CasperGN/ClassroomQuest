@@ -5,6 +5,25 @@ enum GradeBand: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+extension GradeBand {
+    var displayName: String {
+        switch self {
+        case .kindergarten:
+            return "Kindergarten"
+        case .grade1:
+            return "Grade 1"
+        case .grade2:
+            return "Grade 2"
+        case .grade3:
+            return "Grade 3"
+        case .grade4:
+            return "Grade 4"
+        case .grade5:
+            return "Grade 5"
+        }
+    }
+}
+
 enum MathSkill: String, CaseIterable, Identifiable {
     // Early Number Sense
     case counting
