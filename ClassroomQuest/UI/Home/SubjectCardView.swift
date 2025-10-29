@@ -4,6 +4,8 @@ struct SubjectCardView: View {
     let subject: LearningSubject
     let progressSummary: SubjectProgressSummary
     let onStartExercise: () -> Void
+    
+    private static let starIndices = Array(0..<5)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -32,29 +34,8 @@ struct SubjectCardView: View {
             }
 
             HStack(spacing: 2) {
-                ForEach(Array(0..<5), id: \.self) { index in
-                    let lowerBound = Double(index)
-                    let upperBound = lowerBound + 1
-
-                    let symbol: String
-                    let isFilled: Bool
-                    if progressSummary.starRating >= upperBound {
-                        symbol = "star.fill"
-                        isFilled = true
-                    } else if progressSummary.starRating > lowerBound {
-                        symbol = "star.leadinghalf.filled"
-                        isFilled = true
-                    } else {
-                        symbol = "star"
-                        isFilled = false
-                    }
-
-                    Image(systemName: symbol)
-                        .foregroundStyle(
-                            isFilled
-                                ? CQTheme.yellowAccent
-                                : CQTheme.textSecondary.opacity(0.3)
-                        )
+                ForEach(0..<5, id: \.self) { i in
+                    star(for: progressSummary.starRating, at: i)
                 }
                 Spacer()
                 Text(progressSummary.statusText)
@@ -87,6 +68,17 @@ struct SubjectCardView: View {
                 .shadow(color: CQTheme.bluePrimary.opacity(0.12), radius: 16, x: 0, y: 8)
         )
     }
+}
+
+@ViewBuilder
+private func star(for rating: Double, at index: Int) -> some View {
+    let lower = Double(index), upper = lower + 1
+    let symbol = rating >= upper ? "star.fill" :
+                 rating >  lower ? "star.leadinghalf.filled" : "star"
+    let filled = rating > lower
+    Image(systemName: symbol)
+        .foregroundStyle(filled ? CQTheme.yellowAccent
+                                : CQTheme.textSecondary.opacity(0.3))
 }
 
 struct SubjectProgressSummary {
