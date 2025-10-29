@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var progressStore: ProgressStore
     @EnvironmentObject private var purchaseManager: MockPurchaseManager
     @State private var path: [ExerciseRoute] = []
+    @State private var selectedTab: MainTab = .learn
     @State private var showParentalGate = false
     @State private var showSettings = false
     @State private var pendingAction: (() -> Void)?
@@ -20,56 +21,76 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            ScrollView {
-                LazyVStack(spacing: 24) {
-                    ForEach(LearningSubject.allCases) { subject in
-                        SubjectCardView(subject: subject, progressSummary: summary(for: subject)) {
-                            startExercise(for: subject)
-                        }
-                        .padding(.horizontal)
+        let selection = Binding(
+            get: { selectedTab },
+            set: { newValue in
+                guard newValue != selectedTab else { return }
+                if newValue == .parents {
+                    requestParentalAccess {
+                        selectedTab = .parents
                     }
+                } else {
+                    selectedTab = newValue
+                }
+            }
+        )
 
-                    Button {
-                        if !purchaseManager.isUnlocked {
+        return TabView(selection: selection) {
+            NavigationStack(path: $path) {
+                LearnDashboardView(
+                    subjectSummaries: LearningSubject.allCases.map { subject in
+                        LearnDashboardSubject(subject: subject, summary: summary(for: subject))
+                    },
+                    xpProgress: overallXPProgress,
+                    starBalance: starBalance,
+                    isUnlimitedUnlocked: purchaseManager.isUnlocked,
+                    onStartSubject: { subject in
+                        startExercise(for: subject)
+                    },
+                    onOpenShop: {
+                        selectedTab = .shop
+                    },
+                    onUpgrade: {
+                        if purchaseManager.isUnlocked {
+                            showUpgradeDialog = true
+                        } else {
                             requestParentalAccess {
                                 purchaseManager.unlock()
                             }
-                        } else {
-                            showUpgradeDialog = true
                         }
-                    } label: {
-                        if purchaseManager.isUnlocked {
-                            Label("Unlimited Unlocked", systemImage: "checkmark.seal")
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Label("Upgrade to Unlimited", systemImage: "star.circle")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                }
-                .padding(.vertical, 32)
-            }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("ClassroomQuest")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
+                    },
+                    onShowSettings: {
                         requestParentalAccess {
                             showSettings = true
                         }
-                    } label: {
-                        Label("Parent", systemImage: "lock")
                     }
+                )
+                .navigationDestination(for: ExerciseRoute.self) { route in
+                    MathExerciseView(route: route, progressStore: progressStore)
                 }
+                .navigationTitle("")
+                .navigationBarHidden(true)
             }
-            .navigationDestination(for: ExerciseRoute.self) { route in
-                MathExerciseView(route: route, progressStore: progressStore)
-            }
+            .tabItem { Label("Learn", systemImage: "function") }
+            .tag(MainTab.learn)
+
+            AvatarCustomizationView(starBalance: starBalance)
+                .tabItem { Label("Avatar", systemImage: "person.crop.circle") }
+                .tag(MainTab.avatar)
+
+            ShopView(starBalance: starBalance, onSpend: { _ in })
+                .tabItem { Label("Shop", systemImage: "bag.fill") }
+                .tag(MainTab.shop)
+
+            QuestMapView()
+                .tabItem { Label("Quests", systemImage: "map.fill") }
+                .tag(MainTab.quests)
+
+            ParentDashboardView(progressStore: progressStore)
+                .tabItem { Label("Parents", systemImage: "gearshape.fill") }
+                .tag(MainTab.parents)
         }
+        .accentColor(CQTheme.bluePrimary)
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
@@ -113,53 +134,85 @@ struct ContentView: View {
         }
     }
 
+    private var starBalance: Int {
+        guard let progress = try? progressStore.subjectProgress(for: .math) else { return 0 }
+        let correct = Int(progress.totalCorrectAnswers)
+        return Int(progress.totalSessions) * 12 + correct
+    }
+
+    private var overallXPProgress: Double {
+        normalizedMasteryProgress(for: .math)
+    }
+
+    private enum MainTab: Hashable {
+        case learn, avatar, shop, quests, parents
+    }
+
     private func summary(for subject: LearningSubject) -> SubjectProgressSummary {
         do {
             let progress = try progressStore.subjectProgress(for: subject)
             let focusSkill = progressStore.focusSkill(for: subject)
+            let normalizedMastery = normalizedMasteryProgress(for: subject)
             let canStart = purchaseManager.isUnlocked || progress.dailyExerciseCount < 1
+            let completedText = progress.totalSessions > 0 ? " • \(progress.totalSessions) quests completed" : ""
+            let detailPrefix = "Next skill: \(focusSkill.displayName)"
 
             if canStart {
                 if purchaseManager.isUnlocked {
-                    let detail = "Unlimited mode active • Next skill: \(focusSkill.displayName)"
+                    let detail = "Unlimited mode active • \(focusSkill.displayName)"
                     return SubjectProgressSummary(
                         statusText: "Unlimited",
                         detailText: detail,
                         statusTint: subject.accentColor,
                         ctaTitle: "Start Quest",
-                        canStart: true
+                        canStart: true,
+                        focusSkillName: focusSkill.displayName,
+                        masteryProgress: normalizedMastery,
+                        starRating: normalizedMastery * 5
                     )
                 } else {
-                    var detail = "Next skill: \(focusSkill.displayName)"
-                    if progress.totalSessions > 0 {
-                        detail += " • \(progress.totalSessions) quests completed"
-                    }
+                    let detail = detailPrefix + completedText
                     return SubjectProgressSummary(
                         statusText: "Ready",
                         detailText: detail,
                         statusTint: subject.accentColor,
                         ctaTitle: "Start Quest",
-                        canStart: true
+                        canStart: true,
+                        focusSkillName: focusSkill.displayName,
+                        masteryProgress: normalizedMastery,
+                        starRating: normalizedMastery * 5
                     )
                 }
             } else {
                 return SubjectProgressSummary(
                     statusText: "Done",
                     detailText: "You've completed today's quest. See you tomorrow!",
-                    statusTint: .orange,
+                    statusTint: CQTheme.yellowAccent,
                     ctaTitle: "All Done",
-                    canStart: false
+                    canStart: false,
+                    focusSkillName: focusSkill.displayName,
+                    masteryProgress: normalizedMastery,
+                    starRating: normalizedMastery * 5
                 )
             }
         } catch {
             return SubjectProgressSummary(
                 statusText: "Loading",
                 detailText: "Preparing your quest...",
-                statusTint: .secondary,
+                statusTint: CQTheme.textSecondary,
                 ctaTitle: "Start",
-                canStart: false
+                canStart: false,
+                focusSkillName: "Loading",
+                masteryProgress: 0,
+                starRating: 0
             )
         }
+    }
+
+    private func normalizedMasteryProgress(for subject: LearningSubject) -> Double {
+        let proficiency = progressStore.focusSkillProficiency(for: subject)
+        let normalized = (proficiency + 2.5) / 5.0
+        return min(max(normalized, 0), 1)
     }
 
     private func startExercise(for subject: LearningSubject) {

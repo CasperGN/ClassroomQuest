@@ -7,45 +7,74 @@ struct SubjectCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(alignment: .top) {
                 Image(systemName: subject.iconSystemName)
-                    .font(.title2)
-                    .padding(8)
+                    .font(.system(size: 32, weight: .semibold, design: .rounded))
+                    .foregroundStyle(subject.accentColor)
+                    .padding(10)
                     .background(subject.accentColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 Spacer()
 
+                CQProgressRing(value: progressSummary.masteryProgress, color: subject.accentColor)
+                    .frame(width: 56, height: 56)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(progressSummary.focusSkillName)
+                    .font(.cqBody2)
+                    .foregroundStyle(CQTheme.textPrimary)
+                Text(progressSummary.detailText)
+                    .font(.cqCaption)
+                    .foregroundStyle(CQTheme.textSecondary)
+                    .lineLimit(2)
+            }
+
+            HStack(spacing: 2) {
+                ForEach(0..<5, id: \.self) { index in
+                    let lowerBound = Double(index)
+                    let upperBound = lowerBound + 1
+                    let symbol: String
+                    if progressSummary.starRating >= upperBound {
+                        symbol = "star.fill"
+                    } else if progressSummary.starRating > lowerBound {
+                        symbol = "star.leadinghalf.filled"
+                    } else {
+                        symbol = "star"
+                    }
+                    Image(systemName: symbol)
+                        .foregroundStyle(progressSummary.starRating > lowerBound ? CQTheme.yellowAccent : CQTheme.textSecondary.opacity(0.3))
+                }
+                Spacer()
                 Text(progressSummary.statusText)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(progressSummary.statusTint.opacity(0.15))
+                    .font(.cqCaption)
                     .foregroundStyle(progressSummary.statusTint)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(progressSummary.statusTint.opacity(0.12))
                     .clipShape(Capsule())
             }
 
-            Text(subject.displayName)
-                .font(.title2)
-                .fontWeight(.semibold)
-
-            Text(progressSummary.detailText)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Spacer()
 
             Button(action: onStartExercise) {
                 Label(progressSummary.ctaTitle, systemImage: "play.fill")
+                    .font(.cqButton)
                     .frame(maxWidth: .infinity)
+                    .frame(height: 56)
             }
             .buttonStyle(.borderedProminent)
+            .tint(subject.accentColor)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .disabled(!progressSummary.canStart)
         }
-        .padding()
+        .padding(20)
+        .frame(width: 180, height: 220)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 8)
+                .fill(CQTheme.cardBackground)
+                .shadow(color: CQTheme.bluePrimary.opacity(0.12), radius: 16, x: 0, y: 8)
         )
     }
 }
@@ -56,13 +85,25 @@ struct SubjectProgressSummary {
     let statusTint: Color
     let ctaTitle: String
     let canStart: Bool
+    let focusSkillName: String
+    let masteryProgress: Double
+    let starRating: Double
 }
 
 #Preview {
     SubjectCardView(
         subject: .math,
-        progressSummary: SubjectProgressSummary(statusText: "Ready", detailText: "You can play today's challenge.", statusTint: .green, ctaTitle: "Start", canStart: true)
+        progressSummary: SubjectProgressSummary(
+            statusText: "Ready",
+            detailText: "Master Addition • 3 quests completed",
+            statusTint: CQTheme.greenSecondary,
+            ctaTitle: "Start Quest",
+            canStart: true,
+            focusSkillName: "Addition",
+            masteryProgress: 0.6,
+            starRating: 3.5
+        )
     ) {}
     .padding()
-    .background(Color(.systemGroupedBackground))
+    .background(CQTheme.background)
 }
