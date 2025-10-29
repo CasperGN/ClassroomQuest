@@ -173,7 +173,7 @@ struct ContentView: View {
         // Avoid recently used prompts across sessions and duplicates within the session.
         var problems: [MathProblem] = []
         var disallowed = progressStore.recentPrompts(for: focusSkill)
-        let desiredCount = 5
+        let desiredCount = 15
         while problems.count < desiredCount {
             var attempts = 0
             var next = problemGenerator.generateProblem(for: focusSkill, proficiency: proficiency, randomSource: &rng)
