@@ -1,7 +1,9 @@
 import SwiftUI
+internal import CoreData
 
 struct ContentView: View {
     @EnvironmentObject private var progressStore: ProgressStore
+    @EnvironmentObject private var purchaseManager: MockPurchaseManager
     @State private var path: [ExerciseRoute] = []
     @State private var showParentalGate = false
     @State private var showSettings = false
@@ -22,12 +24,21 @@ struct ContentView: View {
                     }
 
                     Button {
-                        requestParentalAccess {
+                        if !purchaseManager.isUnlocked {
+                            requestParentalAccess {
+                                purchaseManager.unlock()
+                            }
+                        } else {
                             showUpgradeDialog = true
                         }
                     } label: {
-                        Label("Upgrade to Unlimited", systemImage: "star.circle")
-                            .frame(maxWidth: .infinity)
+                        if purchaseManager.isUnlocked {
+                            Label("Unlimited Unlocked", systemImage: "checkmark.seal")
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Label("Upgrade to Unlimited", systemImage: "star.circle")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                     .buttonStyle(.bordered)
                     .padding(.horizontal)
@@ -66,7 +77,12 @@ struct ContentView: View {
                 pendingAction = nil
             }
         }
-        .alert("ClassroomQuest Unlimited", isPresented: $showUpgradeDialog, actions: {
+        .alert("Unlimited Active", isPresented: Binding(get: { showUpgradeDialog && purchaseManager.isUnlocked }, set: { if !$0 { showUpgradeDialog = false } }), actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text("You have unlocked unlimited exercises. Enjoy!")
+        })
+        .alert("ClassroomQuest Unlimited", isPresented: Binding(get: { showUpgradeDialog && !purchaseManager.isUnlocked }, set: { if !$0 { showUpgradeDialog = false } }), actions: {
             Button("OK", role: .cancel) { }
         }, message: {
             Text("Unlimited Mode unlocks unlimited exercises and more. Stay tuned!")
@@ -77,20 +93,31 @@ struct ContentView: View {
         do {
             let progress = try progressStore.subjectProgress(for: subject)
             let focusSkill = progressStore.focusSkill(for: subject)
-            let canStart = progress.dailyExerciseCount < 1
+            let canStart = purchaseManager.isUnlocked || progress.dailyExerciseCount < 1
 
             if canStart {
-                var detail = "Next skill: \(focusSkill.displayName)"
-                if progress.totalSessions > 0 {
-                    detail += " • \(progress.totalSessions) quests completed"
+                if purchaseManager.isUnlocked {
+                    let detail = "Unlimited mode active • Next skill: \(focusSkill.displayName)"
+                    return SubjectProgressSummary(
+                        statusText: "Unlimited",
+                        detailText: detail,
+                        statusTint: subject.accentColor,
+                        ctaTitle: "Start Quest",
+                        canStart: true
+                    )
+                } else {
+                    var detail = "Next skill: \(focusSkill.displayName)"
+                    if progress.totalSessions > 0 {
+                        detail += " • \(progress.totalSessions) quests completed"
+                    }
+                    return SubjectProgressSummary(
+                        statusText: "Ready",
+                        detailText: detail,
+                        statusTint: subject.accentColor,
+                        ctaTitle: "Start Quest",
+                        canStart: true
+                    )
                 }
-                return SubjectProgressSummary(
-                    statusText: "Ready",
-                    detailText: detail,
-                    statusTint: subject.accentColor,
-                    ctaTitle: "Start Quest",
-                    canStart: true
-                )
             } else {
                 return SubjectProgressSummary(
                     statusText: "Done",
@@ -112,13 +139,27 @@ struct ContentView: View {
     }
 
     private func startExercise(for subject: LearningSubject) {
-        guard let progress = try? progressStore.subjectProgress(for: subject), progress.dailyExerciseCount < 1 else {
+        guard let progress = try? progressStore.subjectProgress(for: subject), purchaseManager.isUnlocked || progress.dailyExerciseCount < 1 else {
             return
         }
-        var rng = SystemRandomNumberGenerator()
+        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
         let focusSkill = progressStore.focusSkill(for: subject)
         let proficiency = progressStore.proficiency(for: focusSkill, subject: subject)
-        let problems = problemGenerator.generateSession(for: focusSkill, proficiency: proficiency, problemCount: 5, randomSource: &rng)
+
+        // Avoid recently used prompts across sessions and duplicates within the session.
+        var problems: [MathProblem] = []
+        var disallowed = progressStore.recentPrompts(for: focusSkill)
+        let desiredCount = 5
+        while problems.count < desiredCount {
+            var attempts = 0
+            var next = problemGenerator.generateProblem(for: focusSkill, proficiency: proficiency, randomSource: &rng)
+            while (disallowed.contains(next.prompt) || problems.contains(where: { $0.prompt == next.prompt })) && attempts < 15 {
+                next = problemGenerator.generateProblem(for: focusSkill, proficiency: proficiency, randomSource: &rng)
+                attempts += 1
+            }
+            problems.append(next)
+            disallowed.insert(next.prompt)
+        }
         let route = ExerciseRoute(subject: subject, problems: problems)
         path.append(route)
     }
@@ -134,3 +175,4 @@ struct ContentView: View {
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
 }
+

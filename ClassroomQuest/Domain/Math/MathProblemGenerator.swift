@@ -9,43 +9,54 @@ struct MathProblemGenerator {
 
     func generateProblem(for skill: MathSkill, proficiency: Double, randomSource: inout RandomNumberGenerator) -> MathProblem {
         let targetDifficulty = masteryEngine.targetDifficulty(for: proficiency)
+        let clampedDifficulty = min(skill.difficultyBounds.upperBound, max(skill.difficultyBounds.lowerBound, targetDifficulty))
         switch skill {
         case .counting:
-            let count = Int.random(in: 3...9, using: &randomSource)
-            return MathProblem(prompt: "How many stars do you count? \(count)", correctAnswer: count, skill: skill, difficulty: targetDifficulty)
+            let a = Int.random(in: 1...5, using: &randomSource)
+            let b = Int.random(in: 1...4, using: &randomSource)
+            return MathProblem(prompt: "\(a) + \(b) = ?", correctAnswer: a + b, skill: skill, difficulty: clampedDifficulty)
         case .additionWithin10:
-            let range = range(forBase: 5, difficulty: targetDifficulty, max: 10)
+            let range = range(forBase: 5, difficulty: clampedDifficulty, upperBound: 10)
             let a = Int.random(in: 1...range, using: &randomSource)
             let b = Int.random(in: 0...max(1, range - a), using: &randomSource)
-            return MathProblem(prompt: "\(a) + \(b) = ?", correctAnswer: a + b, skill: skill, difficulty: targetDifficulty)
+            return MathProblem(prompt: "\(a) + \(b) = ?", correctAnswer: a + b, skill: skill, difficulty: clampedDifficulty)
         case .additionWithin20:
-            let range = range(forBase: 10, difficulty: targetDifficulty, max: 20)
+            let range = range(forBase: 10, difficulty: clampedDifficulty, upperBound: 20)
             let a = Int.random(in: 5...range, using: &randomSource)
             let b = Int.random(in: 1...max(5, range - a + 5), using: &randomSource)
             let sum = a + b
-            return MathProblem(prompt: "\(a) + \(b) = ?", correctAnswer: sum, skill: skill, difficulty: targetDifficulty)
+            return MathProblem(prompt: "\(a) + \(b) = ?", correctAnswer: sum, skill: skill, difficulty: clampedDifficulty)
         case .subtractionWithin20:
-            let range = range(forBase: 12, difficulty: targetDifficulty, max: 20)
+            let range = range(forBase: 12, difficulty: clampedDifficulty, upperBound: 20)
             let a = Int.random(in: 6...range, using: &randomSource)
             let b = Int.random(in: 1...a, using: &randomSource)
-            return MathProblem(prompt: "\(a) − \(b) = ?", correctAnswer: a - b, skill: skill, difficulty: targetDifficulty)
-        case .multiplicationWithin5:
+            return MathProblem(prompt: "\(a) − \(b) = ?", correctAnswer: a - b, skill: skill, difficulty: clampedDifficulty)
+        case .multiplicationFactsTo5:
             let multiplier = Int.random(in: 2...5, using: &randomSource)
-            let range = max(3, Int(round(3 + targetDifficulty * 3)))
+            let range = max(3, Int(round(3 + clampedDifficulty * 3)))
             let multiplicand = Int.random(in: 2...range, using: &randomSource)
-            return MathProblem(prompt: "\(multiplier) × \(multiplicand) = ?", correctAnswer: multiplier * multiplicand, skill: skill, difficulty: targetDifficulty)
+            return MathProblem(prompt: "\(multiplier) × \(multiplicand) = ?", correctAnswer: multiplier * multiplicand, skill: skill, difficulty: clampedDifficulty)
         }
     }
 
     func generateSession(for skill: MathSkill, proficiency: Double, problemCount: Int = 5, randomSource: inout RandomNumberGenerator) -> [MathProblem] {
-        (0..<problemCount).map { _ in
-            generateProblem(for: skill, proficiency: proficiency, randomSource: &randomSource)
+        (0..<problemCount).reduce(into: [MathProblem]()) { acc, _ in
+            var attempts = 0
+            var next: MathProblem
+            repeat {
+                next = generateProblem(for: skill, proficiency: proficiency, randomSource: &randomSource)
+                attempts += 1
+                // Cap retries to avoid infinite loops in extreme edge cases
+                if attempts > 10 { break }
+            } while acc.contains(where: { $0.prompt == next.prompt })
+            acc.append(next)
         }
     }
 
-    private func range(forBase base: Int, difficulty: Double, max: Int) -> Int {
-        let adjustable = Double(max - base)
+    private func range(forBase base: Int, difficulty: Double, upperBound: Int) -> Int {
+        let adjustable = Double(upperBound - base)
         let value = Double(base) + adjustable * difficulty
-        return min(max, max(base, Int(round(value))))
+        return min(upperBound, Swift.max(base, Int(round(value))))
     }
 }
+
