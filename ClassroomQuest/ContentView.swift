@@ -1,86 +1,178 @@
-//
-//  ContentView.swift
-//  ClassroomQuest
-//
-//  Created by Casper Nielsen on 10/29/25.
-//
-
 import SwiftUI
-import CoreData
+internal import CoreData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var progressStore: ProgressStore
+    @EnvironmentObject private var purchaseManager: MockPurchaseManager
+    @State private var path: [ExerciseRoute] = []
+    @State private var showParentalGate = false
+    @State private var showSettings = false
+    @State private var pendingAction: (() -> Void)?
+    @State private var showUpgradeDialog = false
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+    private let problemGenerator = MathProblemGenerator()
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+        NavigationStack(path: $path) {
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    ForEach(LearningSubject.allCases) { subject in
+                        SubjectCardView(subject: subject, progressSummary: summary(for: subject)) {
+                            startExercise(for: subject)
+                        }
+                        .padding(.horizontal)
                     }
+
+                    Button {
+                        if !purchaseManager.isUnlocked {
+                            requestParentalAccess {
+                                purchaseManager.unlock()
+                            }
+                        } else {
+                            showUpgradeDialog = true
+                        }
+                    } label: {
+                        if purchaseManager.isUnlocked {
+                            Label("Unlimited Unlocked", systemImage: "checkmark.seal")
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Label("Upgrade to Unlimited", systemImage: "star.circle")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal)
+                    .padding(.top, 12)
                 }
-                .onDelete(perform: deleteItems)
+                .padding(.vertical, 32)
             }
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("ClassroomQuest")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    Button {
+                        requestParentalAccess {
+                            showSettings = true
+                        }
+                    } label: {
+                        Label("Parent", systemImage: "lock")
                     }
                 }
             }
-            Text("Select an item")
+            .navigationDestination(for: ExerciseRoute.self) { route in
+                MathExerciseView(route: route, progressStore: progressStore)
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
+        .sheet(isPresented: $showParentalGate) {
+            ParentalGateView {
+                showParentalGate = false
+                let action = pendingAction
+                pendingAction = nil
+                action?()
+            } onCancel: {
+                showParentalGate = false
+                pendingAction = nil
+            }
+        }
+        .alert("Unlimited Active", isPresented: Binding(get: { showUpgradeDialog && purchaseManager.isUnlocked }, set: { if !$0 { showUpgradeDialog = false } }), actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text("You have unlocked unlimited exercises. Enjoy!")
+        })
+        .alert("ClassroomQuest Unlimited", isPresented: Binding(get: { showUpgradeDialog && !purchaseManager.isUnlocked }, set: { if !$0 { showUpgradeDialog = false } }), actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text("Unlimited Mode unlocks unlimited exercises and more. Stay tuned!")
+        })
+    }
+
+    private func summary(for subject: LearningSubject) -> SubjectProgressSummary {
+        do {
+            let progress = try progressStore.subjectProgress(for: subject)
+            let focusSkill = progressStore.focusSkill(for: subject)
+            let canStart = purchaseManager.isUnlocked || progress.dailyExerciseCount < 1
+
+            if canStart {
+                if purchaseManager.isUnlocked {
+                    let detail = "Unlimited mode active • Next skill: \(focusSkill.displayName)"
+                    return SubjectProgressSummary(
+                        statusText: "Unlimited",
+                        detailText: detail,
+                        statusTint: subject.accentColor,
+                        ctaTitle: "Start Quest",
+                        canStart: true
+                    )
+                } else {
+                    var detail = "Next skill: \(focusSkill.displayName)"
+                    if progress.totalSessions > 0 {
+                        detail += " • \(progress.totalSessions) quests completed"
+                    }
+                    return SubjectProgressSummary(
+                        statusText: "Ready",
+                        detailText: detail,
+                        statusTint: subject.accentColor,
+                        ctaTitle: "Start Quest",
+                        canStart: true
+                    )
+                }
+            } else {
+                return SubjectProgressSummary(
+                    statusText: "Done",
+                    detailText: "You've completed today's quest. See you tomorrow!",
+                    statusTint: .orange,
+                    ctaTitle: "All Done",
+                    canStart: false
+                )
+            }
+        } catch {
+            return SubjectProgressSummary(
+                statusText: "Loading",
+                detailText: "Preparing your quest...",
+                statusTint: .secondary,
+                ctaTitle: "Start",
+                canStart: false
+            )
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+    private func startExercise(for subject: LearningSubject) {
+        guard let progress = try? progressStore.subjectProgress(for: subject), purchaseManager.isUnlocked || progress.dailyExerciseCount < 1 else {
+            return
         }
+        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
+        let focusSkill = progressStore.focusSkill(for: subject)
+        let proficiency = progressStore.proficiency(for: focusSkill, subject: subject)
+
+        // Avoid recently used prompts across sessions and duplicates within the session.
+        var problems: [MathProblem] = []
+        var disallowed = progressStore.recentPrompts(for: focusSkill)
+        let desiredCount = 5
+        while problems.count < desiredCount {
+            var attempts = 0
+            var next = problemGenerator.generateProblem(for: focusSkill, proficiency: proficiency, randomSource: &rng)
+            while (disallowed.contains(next.prompt) || problems.contains(where: { $0.prompt == next.prompt })) && attempts < 15 {
+                next = problemGenerator.generateProblem(for: focusSkill, proficiency: proficiency, randomSource: &rng)
+                attempts += 1
+            }
+            problems.append(next)
+            disallowed.insert(next.prompt)
+        }
+        let route = ExerciseRoute(subject: subject, problems: problems)
+        path.append(route)
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
+    private func requestParentalAccess(_ action: @escaping () -> Void) {
+        pendingAction = action
+        showParentalGate = true
     }
 }
-
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
 
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
 }
+
