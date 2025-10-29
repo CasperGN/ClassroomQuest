@@ -16,6 +16,7 @@ struct CQProgressRing: View {
                     gradient: Gradient(colors: [color, color.opacity(0.6), color]),
                     center: .center
                 ))
+
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
             Text("\(Int(value * 100))%")
