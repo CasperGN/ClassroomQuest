@@ -22,7 +22,7 @@ enum LearningSubject: String, CaseIterable, Identifiable {
     var accentColorHex: UInt32 {
         switch self {
         case .math:
-            return 0x4E6EFA
+            return 0x59A5FF
         }
     }
 }
