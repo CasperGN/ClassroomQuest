@@ -1,4 +1,5 @@
 import SwiftUI
+internal import CoreData
 
 struct ExerciseRoute: Hashable {
     let id = UUID()
@@ -294,10 +295,10 @@ struct MathExerciseView: View {
 #Preview {
     let controller = PersistenceController.preview
     let store = ProgressStore(viewContext: controller.container.viewContext)
-    var generatorSource = SystemRandomNumberGenerator()
+    var generatorSource: any RandomNumberGenerator = SystemRandomNumberGenerator()
     let generator = MathProblemGenerator()
     let problems = (0..<5).map { _ in generator.generateProblem(for: .additionWithin10, proficiency: 0, randomSource: &generatorSource) }
-    return NavigationStack {
+    NavigationStack {
         MathExerciseView(route: ExerciseRoute(subject: .math, problems: problems), progressStore: store)
     }
 }
