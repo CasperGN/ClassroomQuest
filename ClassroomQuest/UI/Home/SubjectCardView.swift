@@ -32,20 +32,26 @@ struct SubjectCardView: View {
             }
 
             HStack(spacing: 2) {
-                ForEach(0..<5, id: \.self) { index in
+                ForEach(Array(0..<5), id: \.self) { index in
                     let lowerBound = Double(index)
                     let upperBound = lowerBound + 1
+
                     let symbol: String
+                    let isFilled: Bool
                     if progressSummary.starRating >= upperBound {
                         symbol = "star.fill"
+                        isFilled = true
                     } else if progressSummary.starRating > lowerBound {
                         symbol = "star.leadinghalf.filled"
+                        isFilled = true
                     } else {
                         symbol = "star"
+                        isFilled = false
                     }
+
                     Image(systemName: symbol)
                         .foregroundStyle(
-                            progressSummary.starRating > lowerBound
+                            isFilled
                                 ? CQTheme.yellowAccent
                                 : CQTheme.textSecondary.opacity(0.3)
                         )
