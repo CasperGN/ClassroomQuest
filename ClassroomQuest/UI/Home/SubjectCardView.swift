@@ -44,7 +44,11 @@ struct SubjectCardView: View {
                         symbol = "star"
                     }
                     Image(systemName: symbol)
-                        .foregroundStyle(progressSummary.starRating > lowerBound ? CQTheme.yellowAccent : CQTheme.textSecondary.opacity(0.3))
+                        .foregroundStyle(
+                            progressSummary.starRating > lowerBound
+                                ? CQTheme.yellowAccent
+                                : CQTheme.textSecondary.opacity(0.3)
+                        )
                 }
                 Spacer()
                 Text(progressSummary.statusText)
