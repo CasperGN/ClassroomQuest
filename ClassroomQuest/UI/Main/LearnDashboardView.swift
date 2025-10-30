@@ -18,6 +18,11 @@ struct LearnDashboardView: View {
     let onShowSettings: () -> Void
 
     private let horizontalPadding: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var headerAvatarSize: CGFloat = 68
+    @ScaledMetric(relativeTo: .title2) private var headerEmojiSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .body) private var supportTileMinHeight: CGFloat = 164
+    @ScaledMetric(relativeTo: .body) private var tileIconSize: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var tileButtonHeight: CGFloat = 44
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -70,18 +75,19 @@ struct LearnDashboardView: View {
                 ZStack {
                     Circle()
                         .fill(CQTheme.cardBackground)
-                        .frame(width: 68, height: 68)
+                        .frame(width: headerAvatarSize, height: headerAvatarSize)
                         .shadow(color: CQTheme.bluePrimary.opacity(0.15), radius: 12, x: 0, y: 8)
                     Text("😊")
-                        .font(.system(size: 36))
+                        .font(.system(size: headerEmojiSize))
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Today's Quest")
-                        .font(.cqTitle2)
+                        .font(.system(.title2, design: .rounded))
                         .foregroundStyle(CQTheme.textPrimary)
+                        .minimumScaleFactor(0.85)
                     Text("Keep your streak alive and earn stars!")
-                        .font(.cqBody2)
+                        .font(.system(.callout, design: .rounded))
                         .foregroundStyle(CQTheme.textSecondary)
                 }
 
@@ -89,7 +95,7 @@ struct LearnDashboardView: View {
 
                 Button(action: onShowSettings) {
                     Label("Parents", systemImage: "gearshape")
-                        .font(.cqCaption)
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .foregroundStyle(CQTheme.bluePrimary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -103,7 +109,7 @@ struct LearnDashboardView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("XP Progress")
-                    .font(.cqCaption)
+                    .font(.system(.footnote, design: .rounded).weight(.medium))
                     .foregroundStyle(CQTheme.textSecondary)
                 GeometryReader { geometry in
                     Capsule()
@@ -124,7 +130,7 @@ struct LearnDashboardView: View {
                 }
                 .frame(height: 18)
                 Text("Level \(max(1, Int(xpProgress * 10))) Adventurer")
-                    .font(.cqCaption)
+                    .font(.system(.footnote, design: .rounded).weight(.medium))
                     .foregroundStyle(CQTheme.textPrimary.opacity(0.8))
             }
         }
@@ -137,81 +143,75 @@ struct LearnDashboardView: View {
     }
 
     private var starBalanceTile: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "star.fill")
-                    .font(.title2)
-                    .foregroundStyle(CQTheme.yellowAccent)
-                    .padding(12)
-                    .background(CQTheme.yellowAccent.opacity(0.16))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Stars")
-                        .font(.cqBody1)
-                        .foregroundStyle(CQTheme.textPrimary)
-                    Text("You have \(starBalance) stars ready to spend.")
-                        .font(.cqCaption)
-                        .foregroundStyle(CQTheme.textSecondary)
-                }
-            }
-
-            Button(action: onOpenShop) {
-                Text("Go to Shop")
-                    .font(.cqButton)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(CQTheme.yellowAccent.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .frame(minHeight: 172, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(CQTheme.cardBackground)
-                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+        supportTile(
+            iconName: "star.fill",
+            tint: CQTheme.yellowAccent,
+            title: "Stars",
+            message: "You have \(starBalance) stars ready to spend.",
+            buttonTitle: "Go to Shop",
+            buttonBackground: CQTheme.yellowAccent.opacity(0.18),
+            action: onOpenShop
         )
     }
 
     private var unlimitedTile: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: isUnlimitedUnlocked ? "checkmark.seal.fill" : "sparkles")
-                    .font(.title2)
-                    .foregroundStyle(isUnlimitedUnlocked ? CQTheme.greenSecondary : CQTheme.bluePrimary)
-                    .padding(12)
-                    .background(
-                        (isUnlimitedUnlocked ? CQTheme.greenSecondary : CQTheme.bluePrimary)
-                            .opacity(0.16)
-                    )
+        supportTile(
+            iconName: isUnlimitedUnlocked ? "checkmark.seal.fill" : "sparkles",
+            tint: isUnlimitedUnlocked ? CQTheme.greenSecondary : CQTheme.bluePrimary,
+            title: isUnlimitedUnlocked ? "Unlimited Unlocked" : "Unlock Unlimited",
+            message: isUnlimitedUnlocked ? "Enjoy endless quests every day." : "Parents can enable endless quests with a tap.",
+            buttonTitle: isUnlimitedUnlocked ? "See Benefits" : "Ask a Grown-up",
+            buttonBackground: CQTheme.bluePrimary.opacity(0.12),
+            action: onUpgrade
+        )
+    }
+
+    private func supportTile(
+        iconName: String,
+        tint: Color,
+        title: String,
+        message: String,
+        buttonTitle: String,
+        buttonBackground: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(tint)
+                    .font(.system(size: tileIconSize, weight: .semibold, design: .rounded))
+                    .frame(width: tileIconSize + 12, height: tileIconSize + 12)
+                    .background(tint.opacity(0.15))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(isUnlimitedUnlocked ? "Unlimited Unlocked" : "Unlock Unlimited")
-                        .font(.cqBody1)
+                    Text(title)
+                        .font(.system(.headline, design: .rounded))
                         .foregroundStyle(CQTheme.textPrimary)
-                    Text(isUnlimitedUnlocked ? "Enjoy endless quests every day." : "Parents can enable endless quests with a tap.")
-                        .font(.cqCaption)
+                        .minimumScaleFactor(0.9)
+                    Text(message)
+                        .font(.system(.subheadline, design: .rounded))
                         .foregroundStyle(CQTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            Button(action: onUpgrade) {
-                Text(isUnlimitedUnlocked ? "See Benefits" : "Ask a Grown-up")
-                    .font(.cqButton)
+            Spacer(minLength: 0)
+
+            Button(action: action) {
+                Text(buttonTitle)
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(CQTheme.bluePrimary.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .frame(height: tileButtonHeight)
+                    .background(buttonBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
         }
         .padding(20)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .frame(minHeight: 172, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: supportTileMinHeight, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(CQTheme.cardBackground)

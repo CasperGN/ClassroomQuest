@@ -4,23 +4,29 @@ struct SubjectCardView: View {
     let subject: LearningSubject
     let progressSummary: SubjectProgressSummary
     let onStartExercise: () -> Void
-    
+
     private static let starIndices = Array(0..<5)
+    @ScaledMetric(relativeTo: .title3) private var iconSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .title3) private var iconPadding: CGFloat = 10
+    @ScaledMetric(relativeTo: .title3) private var ringSize: CGFloat = 52
+    @ScaledMetric(relativeTo: .title2) private var cardWidth: CGFloat = 190
+    @ScaledMetric(relativeTo: .title2) private var cardHeight: CGFloat = 220
+    @ScaledMetric(relativeTo: .headline) private var actionHeight: CGFloat = 44
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 Image(systemName: subject.iconSystemName)
-                    .font(.system(size: 32, weight: .semibold, design: .rounded))
+                    .font(.system(size: iconSize, weight: .semibold, design: .rounded))
                     .foregroundStyle(subject.accentColor)
-                    .padding(10)
+                    .padding(iconPadding)
                     .background(subject.accentColor.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 Spacer()
 
                 CQProgressRing(value: progressSummary.masteryProgress, color: subject.accentColor)
-                    .frame(width: 56, height: 56)
+                    .frame(width: ringSize, height: ringSize)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -47,13 +53,13 @@ struct SubjectCardView: View {
                     .clipShape(Capsule())
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
             Button(action: onStartExercise) {
                 Label(progressSummary.ctaTitle, systemImage: "play.fill")
-                    .font(.cqButton)
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: actionHeight)
             }
             .buttonStyle(.borderedProminent)
             .tint(subject.accentColor)
@@ -61,7 +67,7 @@ struct SubjectCardView: View {
             .disabled(!progressSummary.canStart)
         }
         .padding(20)
-        .frame(width: 200, height: 236)
+        .frame(width: cardWidth, height: cardHeight)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(CQTheme.cardBackground)
