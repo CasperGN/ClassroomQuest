@@ -84,7 +84,7 @@ enum CurriculumSubject: String, CaseIterable, Identifiable {
     case math
     case language
     case science
-    case values
+    case social = "values"
 
     var id: String { rawValue }
 
@@ -93,7 +93,7 @@ enum CurriculumSubject: String, CaseIterable, Identifiable {
         case .math: return "Math"
         case .language: return "Language"
         case .science: return "Science"
-        case .values: return "Social & Values"
+        case .social: return "Social"
         }
     }
 
@@ -102,7 +102,7 @@ enum CurriculumSubject: String, CaseIterable, Identifiable {
         case .math: return "function"
         case .language: return "book.fill"
         case .science: return "leaf.fill"
-        case .values: return "heart.fill"
+        case .social: return "heart.fill"
         }
     }
 
@@ -111,7 +111,7 @@ enum CurriculumSubject: String, CaseIterable, Identifiable {
         case .math: return CQTheme.bluePrimary
         case .language: return CQTheme.purpleLanguage
         case .science: return CQTheme.greenSecondary
-        case .values: return CQTheme.goldReligious
+        case .social: return CQTheme.goldReligious
         }
     }
 }
@@ -122,7 +122,7 @@ enum CurriculumCatalog {
         case .math: return mathPath
         case .language: return languagePath
         case .science: return sciencePath
-        case .values: return valuesPath
+        case .social: return socialPath
         }
     }
 
@@ -1046,8 +1046,8 @@ enum CurriculumCatalog {
         ]
     )
 
-    private static let valuesPath = CurriculumSubjectPath(
-        subject: .values,
+    private static let socialPath = CurriculumSubjectPath(
+        subject: .social,
         storyline: "Guide the Harmony Village through character quests and community missions.",
         levels: [
             CurriculumLevel(
