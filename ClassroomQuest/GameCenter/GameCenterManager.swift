@@ -40,14 +40,7 @@ final class GameCenterManager: ObservableObject {
 
         guidance = nil
 
-        if #available(iOS 17.0, *) {
-            Task { [weak self] in
-                guard let self else { return }
-                await self.authenticateUsingAsyncAPI()
-            }
-        } else {
-            authenticateUsingHandler()
-        }
+        authenticateUsingHandler()
     }
 
     func recordSession(report: GameSessionReport) {
@@ -126,16 +119,6 @@ final class GameCenterManager: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             await self.flushPendingReports()
-        }
-    }
-
-    @available(iOS 17.0, *)
-    private func authenticateUsingAsyncAPI() async {
-        do {
-            try await GKLocalPlayer.local.authenticateIfNeeded()
-            await finalizeAuthenticationSuccess()
-        } catch {
-            await handleAuthenticationFailure(error)
         }
     }
 
