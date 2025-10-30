@@ -2,6 +2,9 @@ import Combine
 import Foundation
 import GameKit
 import os
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @MainActor
 final class GameCenterManager: ObservableObject {
@@ -20,13 +23,49 @@ final class GameCenterManager: ObservableObject {
 
     func authenticate() {
         guard authenticationState != .authenticating else { return }
-        if case .authenticated = authenticationState, GKLocalPlayer.local.isAuthenticated {
+
+        if GKLocalPlayer.local.isAuthenticated {
+            authenticationState = .authenticated
             configureAccessPoint(isActive: true)
+            Task { [weak self] in
+                guard let self else { return }
+                await self.flushPendingReports()
+            }
             return
         }
-        authenticationState = .authenticating
 
-        Task { await authenticatePlayer() }
+        authenticationState = .authenticating
+        configureAccessPoint(isActive: false)
+
+        GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
+            guard let self else { return }
+
+            if let viewController {
+                self.presentAuthenticationViewController(viewController)
+                return
+            }
+
+            if let error {
+                let message = self.userFacingMessage(for: error)
+                self.logger.error("Game Center authentication failed: \(message, privacy: .public)")
+                self.authenticationState = .failed(message)
+                self.configureAccessPoint(isActive: false)
+                return
+            }
+
+            guard GKLocalPlayer.local.isAuthenticated else {
+                self.authenticationState = .idle
+                self.configureAccessPoint(isActive: false)
+                return
+            }
+
+            self.authenticationState = .authenticated
+            self.configureAccessPoint(isActive: true)
+            Task { [weak self] in
+                guard let self else { return }
+                await self.flushPendingReports()
+            }
+        }
     }
 
     func recordSession(report: GameSessionReport) {
@@ -43,28 +82,8 @@ final class GameCenterManager: ObservableObject {
         configureAccessPoint(isActive: GKLocalPlayer.local.isAuthenticated)
     }
 
-    private func authenticatePlayer() async {
-        do {
-            try await GKLocalPlayer.local.authenticate()
-
-            guard GKLocalPlayer.local.isAuthenticated else {
-                authenticationState = .idle
-                configureAccessPoint(isActive: false)
-                return
-            }
-
-            authenticationState = .authenticated
-            configureAccessPoint(isActive: true)
-            await flushPendingReports()
-        } catch {
-            logger.error("Game Center authentication failed: \(error.localizedDescription, privacy: .public)")
-            authenticationState = .failed(error.localizedDescription)
-            configureAccessPoint(isActive: false)
-        }
-    }
-
     private func flushPendingReports() async {
-        guard case .authenticated = authenticationState else { return }
+        guard GKLocalPlayer.local.isAuthenticated else { return }
         let reports = pendingReports
         pendingReports.removeAll()
 
@@ -108,6 +127,60 @@ final class GameCenterManager: ObservableObject {
     private func configureAccessPoint(isActive: Bool) {
         GKAccessPoint.shared.location = .topLeading
         GKAccessPoint.shared.isActive = isActive && accessPointRequested
+    }
+
+#if canImport(UIKit)
+    private func presentAuthenticationViewController(_ controller: UIViewController) {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let window = scene.windows.first(where: { $0.isKeyWindow }),
+              let root = window.rootViewController else {
+            logger.error("Unable to find a window to present the Game Center sign-in sheet.")
+            authenticationState = .failed("Unable to present sign-in UI.")
+            configureAccessPoint(isActive: false)
+            return
+        }
+
+        let presenter = topViewController(from: root) ?? root
+        if presenter.presentedViewController == nil {
+            presenter.present(controller, animated: true)
+        }
+    }
+
+    private func topViewController(from root: UIViewController?) -> UIViewController? {
+        if let navigation = root as? UINavigationController {
+            return topViewController(from: navigation.visibleViewController)
+        }
+
+        if let tab = root as? UITabBarController {
+            return topViewController(from: tab.selectedViewController)
+        }
+
+        if let presented = root?.presentedViewController {
+            return topViewController(from: presented)
+        }
+
+        return root
+    }
+#endif
+
+    private func userFacingMessage(for error: Error) -> String {
+        let nsError = error as NSError
+        if nsError.domain == GKErrorDomain, let code = GKError.Code(rawValue: nsError.code) {
+            switch code {
+            case .cancelled:
+                return String(localized: "Sign-in was cancelled. You can try again from Settings.", comment: "Message shown when a parent cancels the Game Center sign-in flow.")
+            case .notAuthenticated, .gameUnrecognized:
+                return String(localized: "Please sign in to Game Center from Settings to enable achievements.", comment: "Message instructing the parent to sign in to Game Center.")
+            case .restricted:
+                return String(localized: "Game Center is restricted on this device.", comment: "Message shown when Game Center restrictions are enabled.")
+            default:
+                break
+            }
+        }
+
+        return error.localizedDescription
     }
 
     private func submit(report: GameSessionReport) async {
