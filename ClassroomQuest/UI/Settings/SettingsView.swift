@@ -7,9 +7,9 @@ struct SettingsView: View {
     @EnvironmentObject private var progressStore: ProgressStore
 
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
-    @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.kindergarten.rawValue
+    @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.preK.rawValue
     @State private var selectedGrade: GradeBand = .grade2
-    @State private var selectedCurriculumGrade: CurriculumGrade = .kindergarten
+    @State private var selectedCurriculumGrade: CurriculumGrade = .preK
 
     var body: some View {
         NavigationStack {

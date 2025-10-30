@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var showPlacementPrompt = false
     @State private var placementError: String?
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
+    @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.preK.rawValue
 
     private var storedPlacementGrade: GradeBand? {
         GradeBand(rawValue: placementGradeRaw)
@@ -117,6 +118,9 @@ struct ContentView: View {
         do {
             try progressStore.applyPlacement(profile: profile)
             placementGradeRaw = grade.rawValue
+            let questGrade = CurriculumGrade(gradeBand: grade)
+            progressStore.applyCurriculumPlacement(grade: questGrade)
+            curriculumPlacementRaw = questGrade.rawValue
             showPlacementPrompt = false
         } catch {
             placementError = "We couldn't set your starting level. Please try again."

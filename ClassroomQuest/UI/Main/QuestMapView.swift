@@ -468,25 +468,42 @@ private struct QuestDetailSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 20) {
                 Capsule()
                     .fill(Color.secondary.opacity(0.3))
                     .frame(width: 40, height: 4)
-                    .padding(.top, 12)
 
-                Text(level.title)
-                    .font(.cqTitle2)
-                    .foregroundStyle(CQTheme.textPrimary)
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(level.title)
+                            .font(.cqTitle2)
+                            .foregroundStyle(CQTheme.textPrimary)
 
-                Text("\(level.grade.displayName) • \(subject.displayName)")
-                    .font(.cqCaption)
-                    .foregroundStyle(subject.accentColor)
+                        Text("\(level.grade.displayName) • \(subject.displayName)")
+                            .font(.cqCaption)
+                            .foregroundStyle(subject.accentColor)
+                    }
 
-                VStack(alignment: .leading, spacing: 12) {
+                    Spacer(minLength: 12)
+
+                    Button {
+                        onStart()
+                    } label: {
+                        Text(buttonTitle)
+                            .font(.cqBody2)
+                            .padding(.horizontal, 12)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(subject.accentColor)
+                    .disabled(status == .locked)
+                }
+
+                VStack(alignment: .leading, spacing: 16) {
                     infoSection(title: "Focus", icon: "target", content: level.focus)
                     infoSection(title: "Overview", icon: "info.circle", content: level.overview)
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Label("Quest Checklist", systemImage: "checkmark.seal")
                             .font(.cqCaption)
                             .foregroundStyle(CQTheme.textPrimary)
@@ -496,7 +513,7 @@ private struct QuestDetailSheet: View {
                             .foregroundStyle(CQTheme.textSecondary)
 
                         ForEach(level.quests) { quest in
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(quest.name)
                                     .font(.cqBody1)
                                     .foregroundStyle(CQTheme.textPrimary)
@@ -515,11 +532,11 @@ private struct QuestDetailSheet: View {
                                     }
                                 }
                             }
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 8)
                             .padding(.horizontal, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(CQTheme.cardBackground.opacity(0.9))
+                                    .fill(CQTheme.cardBackground.opacity(0.92))
                                     .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                             )
                         }
@@ -543,26 +560,10 @@ private struct QuestDetailSheet: View {
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-
-                Spacer(minLength: 12)
             }
-            .padding(.bottom, 24)
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button {
-                onStart()
-            } label: {
-                Text(buttonTitle)
-                    .font(.cqBody1)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(status == .locked)
             .padding(.horizontal, 24)
-            .padding(.top, 12)
-            .background(.ultraThinMaterial)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
         }
         .background(CQTheme.cardBackground)
     }
@@ -583,8 +584,8 @@ private struct QuestDetailSheet: View {
     private var buttonTitle: String {
         switch status {
         case .locked: return "Locked"
-        case .current: return "Start Quest"
-        case .completed: return "Replay Quest"
+        case .current: return "Continue"
+        case .completed: return "Replay"
         }
     }
 }

@@ -84,6 +84,25 @@ enum CurriculumGrade: String, CaseIterable, Identifiable {
     }
 }
 
+extension CurriculumGrade {
+    init(gradeBand: GradeBand) {
+        switch gradeBand {
+        case .kindergarten:
+            self = .kindergarten
+        case .grade1:
+            self = .grade1
+        case .grade2:
+            self = .grade2
+        case .grade3:
+            self = .grade3
+        case .grade4:
+            self = .grade4
+        case .grade5:
+            self = .grade5
+        }
+    }
+}
+
 enum CurriculumSubject: String, CaseIterable, Identifiable {
     case math
     case language
