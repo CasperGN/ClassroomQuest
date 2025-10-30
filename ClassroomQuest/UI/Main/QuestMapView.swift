@@ -234,9 +234,9 @@ struct QuestMapView: View {
                 .padding(.horizontal, 80)
                 .padding(.vertical, 60)
             }
-            .onChange(of: selectedSubject) { subject in
+            .onChange(of: selectedSubject) { _, newSubject in
                 withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
-                    proxy.scrollTo(subject, anchor: .center)
+                    proxy.scrollTo(newSubject, anchor: .center)
                 }
             }
             .onAppear {
@@ -365,7 +365,14 @@ private struct SubjectColumnView: View {
                 with: .color(subject.accentColor.opacity(isFocused ? 0.6 : 0.35)),
                 lineWidth: isFocused ? 12 : 9
             )
-            context.addFilter(.shadow(color: .init(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.18), radius: 8, offset: CGSize(width: 0, height: 6)))
+            context.addFilter(
+                .shadow(
+                    color: .init(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.18),
+                    radius: 8,
+                    x: 0,
+                    y: 6
+                )
+            )
             context.stroke(
                 path,
                 with: .color(Color.white.opacity(0.1)),
