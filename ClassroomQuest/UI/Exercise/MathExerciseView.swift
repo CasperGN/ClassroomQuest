@@ -65,7 +65,7 @@ struct MathExerciseView: View {
 
             GeometryReader { geometry in
                 Capsule()
-                    .fill(Color.white.opacity(0.35))
+                    .fill(Color(.systemFill))
                     .frame(height: 18)
                     .overlay(alignment: .leading) {
                         Capsule()
@@ -104,7 +104,7 @@ struct MathExerciseView: View {
                     .strokeBorder(CQTheme.bluePrimary.opacity(0.4), lineWidth: 2)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white)
+                            .fill(Color(.secondarySystemBackground))
                     )
             )
             .font(.system(size: 32, weight: .regular, design: .rounded))
