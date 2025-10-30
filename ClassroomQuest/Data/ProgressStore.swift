@@ -279,8 +279,15 @@ final class ProgressStore: ObservableObject {
         curriculumPlacementGrade = grade
         for subject in CurriculumSubject.allCases {
             let levels = CurriculumCatalog.subjectPath(for: subject).levels
-            let targetIndex = CurriculumCatalog.indexOfFirstLevel(for: grade, subject: subject) ?? 0
-            curriculumHighestUnlockedIndex[subject] = min(targetIndex, levels.count)
+            guard !levels.isEmpty else {
+                curriculumHighestUnlockedIndex[subject] = 0
+                curriculumLevelRecords[subject] = [:]
+                continue
+            }
+
+            let lastUnlockedIndex = CurriculumCatalog.indexOfLastLevel(upTo: grade, subject: subject) ?? 0
+            let clampedIndex = min(lastUnlockedIndex, max(levels.count - 1, 0))
+            curriculumHighestUnlockedIndex[subject] = clampedIndex
             curriculumLevelRecords[subject] = [:]
         }
         persistCurriculum()

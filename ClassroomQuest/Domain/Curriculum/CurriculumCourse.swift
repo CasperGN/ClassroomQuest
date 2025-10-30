@@ -152,6 +152,17 @@ enum CurriculumCatalog {
         return 0
     }
 
+    static func indexOfLastLevel(upTo grade: CurriculumGrade, subject: CurriculumSubject) -> Int? {
+        let levels = subjectPath(for: subject).levels
+        guard !levels.isEmpty else { return nil }
+
+        if let highestMatch = levels.enumerated().last(where: { $0.element.grade.progressionIndex <= grade.progressionIndex }) {
+            return highestMatch.offset
+        }
+
+        return 0
+    }
+
     private static let mathPath = CurriculumSubjectPath(
         subject: .math,
         storyline: "Climb the Number Peaks to help the village keep its math clock running.",
