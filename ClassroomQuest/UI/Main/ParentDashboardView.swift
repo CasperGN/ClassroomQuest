@@ -113,9 +113,16 @@ struct ParentDashboardView: View {
                         .font(.cqCaption)
                         .foregroundStyle(CQTheme.textSecondary)
                     Spacer()
-                    if case .failed = gameCenterManager.authenticationState {
-                        Button("Retry") {
-                            gameCenterManager.authenticate()
+                    if gameCenterManager.isConfigurationValid {
+                        if case .failed = gameCenterManager.authenticationState {
+                            Button("Retry") {
+                                gameCenterManager.authenticate()
+                            }
+                            .font(.cqCaption)
+                        }
+                    } else {
+                        Button("Check Again") {
+                            gameCenterManager.resetConfigurationValidation()
                         }
                         .font(.cqCaption)
                     }
@@ -138,7 +145,13 @@ struct ParentDashboardView: View {
                 Toggle("Show Game Center icon for kids", isOn: $isAccessPointEnabled)
                     .font(.cqCaption)
                     .tint(CQTheme.bluePrimary)
-                    .disabled(!isGameCenterReady)
+                    .disabled(!isGameCenterReady || !gameCenterManager.isConfigurationValid)
+
+                if !gameCenterManager.isConfigurationValid {
+                    Text("Enable Game Center for this bundle in App Store Connect, then tap \"Check Again\" to retry authentication.")
+                        .font(.cqCaption)
+                        .foregroundStyle(CQTheme.textSecondary)
+                }
             }
             .padding(20)
             .background(

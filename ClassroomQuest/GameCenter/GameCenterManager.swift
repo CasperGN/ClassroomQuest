@@ -16,12 +16,17 @@ final class GameCenterManager: ObservableObject {
     }
 
     @Published private(set) var authenticationState: AuthenticationState = .idle
+    @Published private(set) var isConfigurationValid = true
 
     private let logger = Logger(subsystem: "com.classroomquest.app", category: "GameCenter")
     private var pendingReports: [GameSessionReport] = []
     private var accessPointRequested = false
 
     func authenticate() {
+        guard isConfigurationValid else {
+            logger.debug("Skipping Game Center authentication because configuration is marked invalid.")
+            return
+        }
         guard authenticationState != .authenticating else { return }
 
         if GKLocalPlayer.local.isAuthenticated {
@@ -46,10 +51,8 @@ final class GameCenterManager: ObservableObject {
             }
 
             if let error {
-                let nsError = error as NSError
-                if nsError.domain == GKErrorDomain,
-                   nsError.code == GKError.Code.gameUnrecognized.rawValue {
-                    self.logger.error("Game Center authentication failed because the bundle is not enabled on App Store Connect. Enable Game Center for this app before testing achievements.")
+                if self.handleConfigurationErrorIfNeeded(error) {
+                    return
                 }
 
                 let message = self.userFacingMessage(for: error)
@@ -75,6 +78,7 @@ final class GameCenterManager: ObservableObject {
     }
 
     func recordSession(report: GameSessionReport) {
+        guard isConfigurationValid else { return }
         if case .authenticated = authenticationState, GKLocalPlayer.local.isAuthenticated {
             Task { await submit(report: report) }
         } else {
@@ -85,7 +89,13 @@ final class GameCenterManager: ObservableObject {
 
     func setAccessPointVisible(_ isVisible: Bool) {
         accessPointRequested = isVisible
+        guard isConfigurationValid else { return }
         configureAccessPoint(isActive: GKLocalPlayer.local.isAuthenticated)
+    }
+
+    func resetConfigurationValidation() {
+        isConfigurationValid = true
+        authenticate()
     }
 
     private func flushPendingReports() async {
@@ -133,6 +143,25 @@ final class GameCenterManager: ObservableObject {
     private func configureAccessPoint(isActive: Bool) {
         GKAccessPoint.shared.location = .topLeading
         GKAccessPoint.shared.isActive = isActive && accessPointRequested
+    }
+
+    private func handleConfigurationErrorIfNeeded(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == GKErrorDomain,
+              let code = GKError.Code(rawValue: nsError.code) else { return false }
+
+        switch code {
+        case .gameUnrecognized:
+            logger.error("Game Center authentication failed because the bundle is not enabled on App Store Connect. Enable Game Center for this app before testing achievements.")
+            pendingReports.removeAll()
+            isConfigurationValid = false
+            let message = userFacingMessage(for: error)
+            authenticationState = .failed(message)
+            configureAccessPoint(isActive: false)
+            return true
+        default:
+            return false
+        }
     }
 
 #if canImport(UIKit)
