@@ -78,6 +78,10 @@ enum CurriculumGrade: String, CaseIterable, Identifiable {
         case .grade6: return "Grade 6"
         }
     }
+
+    var progressionIndex: Int {
+        CurriculumGrade.allCases.firstIndex(of: self) ?? 0
+    }
 }
 
 enum CurriculumSubject: String, CaseIterable, Identifiable {
@@ -134,7 +138,18 @@ enum CurriculumCatalog {
 
     static func indexOfFirstLevel(for grade: CurriculumGrade, subject: CurriculumSubject) -> Int? {
         let levels = subjectPath(for: subject).levels
-        return levels.firstIndex { $0.grade == grade }
+        guard !levels.isEmpty else { return nil }
+
+        if let exactMatch = levels.firstIndex(where: { $0.grade == grade }) {
+            return exactMatch
+        }
+
+        let lowerGrades = levels.enumerated().filter { $0.element.grade.progressionIndex < grade.progressionIndex }
+        if let nearestLower = lowerGrades.last?.offset {
+            return nearestLower
+        }
+
+        return 0
     }
 
     private static let mathPath = CurriculumSubjectPath(

@@ -217,7 +217,7 @@ struct QuestMapView: View {
                         case .subject(let subject):
                             proxy.scrollTo(subject, anchor: .center)
                         case .node(let id):
-                            proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.2))
+                            proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.05))
                         }
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -259,7 +259,13 @@ struct QuestMapView: View {
 
     private func firstFocusableNode(for subject: CurriculumSubject) -> QuestNode? {
         let nodes = questNodes(for: subject)
-        return nodes.first(where: { $0.status != .locked }) ?? nodes.first
+        if let current = nodes.first(where: { $0.status == .current }) {
+            return current
+        }
+        if let completed = nodes.first(where: { $0.status == .completed }) {
+            return completed
+        }
+        return nodes.first
     }
 
     private func symbol(for status: QuestNode.Status) -> String {
