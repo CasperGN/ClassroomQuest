@@ -7,8 +7,6 @@ struct QuestNode: Identifiable, Equatable {
     let level: CurriculumLevel
     let subject: CurriculumSubject
     let status: Status
-    let needsReview: Bool
-
     var id: String { "\(subject.rawValue)-\(level.id.uuidString)" }
 
     static func == (lhs: QuestNode, rhs: QuestNode) -> Bool {
@@ -18,6 +16,7 @@ struct QuestNode: Identifiable, Equatable {
 
 struct QuestMapView: View {
     @EnvironmentObject private var progressStore: ProgressStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedSubject: CurriculumSubject = .math
     @State private var selectedNode: QuestNode?
     @State private var activePlayNode: QuestNode?
@@ -44,8 +43,6 @@ struct QuestMapView: View {
                     progressHeader
 
                     subjectChips
-
-                    storylineCard
 
                     mapCanvas
                         .frame(minHeight: 520)
@@ -103,15 +100,8 @@ struct QuestMapView: View {
                         .font(.cqBody1)
                         .foregroundStyle(CQTheme.textPrimary)
                 }
-                .padding(.trailing, 8)
             }
             .padding(.horizontal, 24)
-
-            Text("Guide your hero up each subject path. Tap a glowing quest node to dive in!")
-                .font(.cqBody2)
-                .foregroundStyle(CQTheme.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 36)
         }
     }
 
@@ -143,64 +133,56 @@ struct QuestMapView: View {
     }
 
     private var subjectChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(CurriculumSubject.allCases) { subject in
-                    Button {
-                        let targetNode = firstFocusableNode(for: subject)
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) {
-                            selectedSubject = subject
-                        }
-                        DispatchQueue.main.async {
-                            if let node = targetNode {
-                                scrollTarget = .node(id: node.id)
-                            } else {
-                                scrollTarget = .subject(subject)
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: subject.iconSystemName)
-                            Text(subject.displayName)
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 14)
-                        .background(
-                            Capsule()
-                                .fill(selectedSubject == subject
-                                    ? subject.accentColor.opacity(0.2)
-                                    : Color.white.opacity(0.12))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(selectedSubject == subject ? subject.accentColor : Color.clear, lineWidth: 1.5)
-                        )
-                    }
-                    .buttonStyle(.plain)
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(spacing: 12) {
+                    subjectChipButtons(fillWidth: true)
+                }
+            } else {
+                HStack(spacing: 12) {
+                    subjectChipButtons(fillWidth: false)
                 }
             }
-            .padding(.horizontal, 24)
-        }
-    }
-
-    private var storylineCard: some View {
-        let path = CurriculumCatalog.subjectPath(for: selectedSubject)
-
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: selectedSubject.iconSystemName)
-                    .foregroundStyle(selectedSubject.accentColor)
-                Text("Storyline")
-                    .font(.cqBody1)
-                    .foregroundStyle(CQTheme.textPrimary)
-            }
-
-            Text(path.storyline)
-                .font(.cqBody2)
-                .foregroundStyle(CQTheme.textSecondary)
-                .multilineTextAlignment(.leading)
         }
         .padding(.horizontal, 24)
+    }
+
+    @ViewBuilder
+    private func subjectChipButtons(fillWidth: Bool) -> some View {
+        ForEach(CurriculumSubject.allCases) { subject in
+            Button {
+                let targetNode = firstFocusableNode(for: subject)
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) {
+                    selectedSubject = subject
+                }
+                DispatchQueue.main.async {
+                    if let node = targetNode {
+                        scrollTarget = .node(id: node.id)
+                    } else {
+                        scrollTarget = .subject(subject)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: subject.iconSystemName)
+                    Text(subject.displayName)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .frame(maxWidth: fillWidth ? .infinity : nil, alignment: .center)
+                .background(
+                    Capsule()
+                        .fill(selectedSubject == subject
+                              ? subject.accentColor.opacity(0.2)
+                              : Color.white.opacity(0.12))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(selectedSubject == subject ? subject.accentColor : Color.clear, lineWidth: 1.5)
+                )
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var mapCanvas: some View {
@@ -273,8 +255,7 @@ struct QuestMapView: View {
         let path = CurriculumCatalog.subjectPath(for: subject)
         return path.levels.map { level in
             let status = statusForLevel(level, subject: subject)
-            let needsReview = progressStore.curriculumLevelRecord(for: level, subject: subject)?.needsReview ?? false
-            return QuestNode(level: level, subject: subject, status: status, needsReview: needsReview)
+            return QuestNode(level: level, subject: subject, status: status)
         }
     }
 
@@ -457,15 +438,6 @@ private struct SubjectColumnView: View {
                     Circle()
                         .stroke(colorProvider(node.status), lineWidth: node.status == .current ? 4 : 2)
                 )
-                .overlay(alignment: .topTrailing) {
-                    if node.needsReview {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(CQTheme.orangeWarning)
-                            .offset(x: 8, y: -8)
-                    }
-                }
-
             VStack(spacing: 2) {
                 Text(node.level.title)
                     .font(.cqCaption)
