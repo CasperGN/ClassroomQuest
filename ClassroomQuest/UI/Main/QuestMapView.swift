@@ -81,28 +81,26 @@ struct QuestMapView: View {
     }
 
     private var progressHeader: some View {
-        VStack(spacing: 18) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Level \(progressSnapshot.level)")
-                        .font(.cqBody1)
-                        .foregroundStyle(CQTheme.textPrimary)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Level \(progressSnapshot.level)")
+                    .font(.cqBody1)
+                    .foregroundStyle(CQTheme.textPrimary)
 
-                    levelProgressBar
-                }
-
-                Spacer()
+                Spacer(minLength: 12)
 
                 HStack(spacing: 6) {
-                    Image(systemName: "star.fill")
-                        .foregroundStyle(CQTheme.yellowAccent)
                     Text("\(starBalance)")
                         .font(.cqBody1)
                         .foregroundStyle(CQTheme.textPrimary)
+                    Image(systemName: "star.fill")
+                        .foregroundStyle(CQTheme.yellowAccent)
                 }
             }
-            .padding(.horizontal, 24)
+
+            levelProgressBar
         }
+        .padding(.horizontal, 24)
     }
 
     private var levelProgressBar: some View {
@@ -129,13 +127,14 @@ struct QuestMapView: View {
                     .foregroundStyle(CQTheme.textPrimary)
             }
         }
-        .frame(height: 28)
+        .frame(maxWidth: .infinity)
+        .frame(height: 32)
     }
 
     private var subjectChips: some View {
         Group {
             if horizontalSizeClass == .compact {
-                VStack(spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
                     subjectChipButtons(fillWidth: true)
                 }
             } else {
@@ -219,7 +218,7 @@ struct QuestMapView: View {
                         case .subject(let subject):
                             proxy.scrollTo(subject, anchor: .center)
                         case .node(let id):
-                            proxy.scrollTo(id, anchor: .center)
+                            proxy.scrollTo(id, anchor: .top)
                         }
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
