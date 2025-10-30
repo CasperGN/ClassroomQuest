@@ -76,8 +76,6 @@ struct QuestMapView: View {
                 )
                 .environmentObject(progressStore)
             }
-            .navigationTitle("Quest Map")
-            .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
         }
     }
 
