@@ -1381,6 +1381,10 @@ private struct QuestChallengeView: View {
                 .fill(CQTheme.cardBackground.opacity(0.95))
                 .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 8)
         )
+        .onAppear(perform: resetInputs)
+        .onChange(of: challenge.id) { _, _ in
+            resetInputs()
+        }
     }
 
     @ViewBuilder
@@ -1430,6 +1434,10 @@ private struct QuestChallengeView: View {
                 .buttonStyle(.bordered)
             }
         }
+    }
+
+    private func resetInputs() {
+        numberAnswer = 0
     }
 }
 
