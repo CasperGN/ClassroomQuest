@@ -10,7 +10,7 @@ struct QuestNode: Identifiable {
 }
 
 struct QuestMapView: View {
-    @EnvironmentObject private var curriculumStore: CurriculumProgressStore
+    @EnvironmentObject private var progressStore: ProgressStore
     @State private var selectedSubject: CurriculumSubject = .math
     @State private var selectedLevel: CurriculumLevel?
     @State private var activePlayLevel: CurriculumLevel?
@@ -46,7 +46,7 @@ struct QuestMapView: View {
             }
             .sheet(item: $selectedLevel) { level in
                 let status = statusForLevel(level)
-                let record = curriculumStore.levelRecord(for: level, subject: selectedSubject)
+                let record = progressStore.curriculumLevelRecord(for: level, subject: selectedSubject)
                 QuestDetailSheet(
                     level: level,
                     subject: selectedSubject,
@@ -66,7 +66,7 @@ struct QuestMapView: View {
                     level: level,
                     subject: selectedSubject
                 )
-                .environmentObject(curriculumStore)
+                .environmentObject(progressStore)
             }
             .navigationTitle("Quest Map")
             .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
@@ -168,7 +168,7 @@ struct QuestMapView: View {
                                 .shadow(color: node.status == .completed ? CQTheme.yellowAccent.opacity(0.6) : .clear, radius: 12)
                         )
                         .overlay(alignment: .topTrailing) {
-                            if let record = curriculumStore.levelRecord(for: node.level, subject: selectedSubject), record.needsReview {
+                            if let record = progressStore.curriculumLevelRecord(for: node.level, subject: selectedSubject), record.needsReview {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .font(.caption)
                                     .foregroundStyle(CQTheme.orangeWarning)
@@ -238,7 +238,7 @@ struct QuestMapView: View {
     }
 
     private func statusForLevel(_ level: CurriculumLevel) -> QuestNode.Status {
-        switch curriculumStore.status(for: level, subject: selectedSubject) {
+        switch progressStore.curriculumStatus(for: level, subject: selectedSubject) {
         case .locked: return .locked
         case .current: return .current
         case .completed: return .completed
@@ -250,7 +250,7 @@ private struct QuestDetailSheet: View {
     let level: CurriculumLevel
     let subject: CurriculumSubject
     let status: QuestNode.Status
-    let record: CurriculumProgressStore.LevelRecord?
+    let record: ProgressStore.CurriculumLevelRecord?
     let onStart: () -> Void
 
     var body: some View {
@@ -376,7 +376,7 @@ private struct CurriculumLevelPlayView: View {
     let subject: CurriculumSubject
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var curriculumStore: CurriculumProgressStore
+    @EnvironmentObject private var progressStore: ProgressStore
     @State private var completedChecklist: [UUID: Set<Int>] = [:]
     @State private var didRegisterOutcome = false
 
@@ -412,7 +412,7 @@ private struct CurriculumLevelPlayView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
-                        curriculumStore.recordIncompleteAttempt(
+                        progressStore.recordCurriculumIncompleteAttempt(
                             for: level,
                             subject: subject,
                             completedQuests: completedQuestCount
@@ -425,7 +425,7 @@ private struct CurriculumLevelPlayView: View {
         }
         .onDisappear {
             if !didRegisterOutcome {
-                curriculumStore.recordIncompleteAttempt(
+                progressStore.recordCurriculumIncompleteAttempt(
                     for: level,
                     subject: subject,
                     completedQuests: completedQuestCount
@@ -487,7 +487,7 @@ private struct CurriculumLevelPlayView: View {
                 .foregroundStyle(CQTheme.textPrimary)
 
             Button {
-                curriculumStore.markLevelCompleted(
+                progressStore.markCurriculumLevelCompleted(
                     level,
                     subject: subject,
                     completedQuests: completedQuestCount,
@@ -503,13 +503,13 @@ private struct CurriculumLevelPlayView: View {
             .buttonStyle(.borderedProminent)
             .disabled(completedQuestCount < level.questsRequiredForMastery)
 
-            if curriculumStore.shouldOfferAssistedUnlock(
+            if progressStore.shouldOfferCurriculumAssistedUnlock(
                 for: level,
                 subject: subject,
                 pendingCompletedQuests: completedQuestCount
             ) {
                 Button {
-                    curriculumStore.markLevelCompleted(
+                    progressStore.markCurriculumLevelCompleted(
                         level,
                         subject: subject,
                         completedQuests: completedQuestCount,
@@ -556,5 +556,5 @@ private struct CurriculumLevelPlayView: View {
 
 #Preview {
     QuestMapView()
-        .environmentObject(CurriculumProgressStore())
+        .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
 }

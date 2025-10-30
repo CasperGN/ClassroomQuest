@@ -4,7 +4,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var purchaseManager: MockPurchaseManager
     @EnvironmentObject private var progressStore: ProgressStore
-    @EnvironmentObject private var curriculumStore: CurriculumProgressStore
 
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
     @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.kindergarten.rawValue
@@ -70,7 +69,7 @@ struct SettingsView: View {
                     }
 
                     Button("Apply Quest Grade") {
-                        curriculumStore.applyPlacement(grade: selectedCurriculumGrade)
+                        progressStore.applyCurriculumPlacement(grade: selectedCurriculumGrade)
                         curriculumPlacementRaw = selectedCurriculumGrade.rawValue
                     }
                 }
@@ -96,5 +95,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(MockPurchaseManager.preview)
-        .environmentObject(CurriculumProgressStore())
+        .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
 }
