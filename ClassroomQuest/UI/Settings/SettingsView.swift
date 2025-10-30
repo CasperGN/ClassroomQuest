@@ -1,5 +1,5 @@
+internal import CoreData
 import SwiftUI
-import CoreData
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss

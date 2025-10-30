@@ -1,3 +1,4 @@
+internal import CoreData
 import SwiftUI
 
 struct QuestNode: Identifiable, Equatable {
