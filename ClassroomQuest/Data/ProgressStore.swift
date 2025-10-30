@@ -285,8 +285,9 @@ final class ProgressStore: ObservableObject {
                 continue
             }
 
-            let targetIndex = CurriculumCatalog.indexOfFirstLevel(for: grade, subject: subject) ?? 0
-            let clampedIndex = min(max(targetIndex, 0), max(levels.count - 1, 0))
+            let fallbackIndex = CurriculumCatalog.indexOfFirstLevel(for: grade, subject: subject) ?? 0
+            let unlockIndex = CurriculumCatalog.indexOfLastLevel(upTo: grade, subject: subject) ?? fallbackIndex
+            let clampedIndex = min(max(unlockIndex, 0), max(levels.count - 1, 0))
             curriculumHighestUnlockedIndex[subject] = clampedIndex
             curriculumLevelRecords[subject] = [:]
         }
