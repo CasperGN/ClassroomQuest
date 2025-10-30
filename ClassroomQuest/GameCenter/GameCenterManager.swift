@@ -173,7 +173,7 @@ final class GameCenterManager: ObservableObject {
                 return String(localized: "Sign-in was cancelled. You can try again from Settings.", comment: "Message shown when a parent cancels the Game Center sign-in flow.")
             case .notAuthenticated, .gameUnrecognized:
                 return String(localized: "Please sign in to Game Center from Settings to enable achievements.", comment: "Message instructing the parent to sign in to Game Center.")
-            case .restricted:
+            case .notAuthorized, .underage:
                 return String(localized: "Game Center is restricted on this device.", comment: "Message shown when Game Center restrictions are enabled.")
             default:
                 break
