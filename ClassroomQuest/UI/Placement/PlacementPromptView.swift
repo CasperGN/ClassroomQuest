@@ -35,18 +35,22 @@ struct PlacementPromptView: View {
                     .labelsHidden()
                     .accessibilityLabel("Grade Level")
                 }
-
-                Section {
+            }
+            .navigationTitle("Choose Your Level")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         onConfirm(selectedGrade)
                     } label: {
-                        Text("Start at \(selectedGrade.displayName)")
-                            .frame(maxWidth: .infinity)
+                        Text("Continue")
+                            .fontWeight(.semibold)
                     }
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .buttonBorderShape(.capsule)
+                    .accessibilityLabel("Start at \(selectedGrade.displayName)")
                 }
             }
-            .navigationTitle("Choose Your Level")
         }
         .interactiveDismissDisabled(!allowDismiss)
     }
