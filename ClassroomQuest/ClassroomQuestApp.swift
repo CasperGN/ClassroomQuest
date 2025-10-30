@@ -7,6 +7,7 @@ struct ClassroomQuestApp: App {
     @StateObject private var progressStore: ProgressStore
     @StateObject private var purchaseManager: MockPurchaseManager
     @StateObject private var gameCenterManager: GameCenterManager
+    @State private var hasFinishedSplash = false
 
     init() {
         let context = persistenceController.container.viewContext
@@ -22,11 +23,24 @@ struct ClassroomQuestApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(progressStore)
-                .environmentObject(purchaseManager)
-                .environmentObject(gameCenterManager)
+            ZStack {
+                ContentView()
+                    .opacity(hasFinishedSplash ? 1 : 0)
+
+                if !hasFinishedSplash {
+                    StartupSplashView {
+                        withAnimation(.easeOut(duration: 0.35)) {
+                            hasFinishedSplash = true
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.35), value: hasFinishedSplash)
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            .environmentObject(progressStore)
+            .environmentObject(purchaseManager)
+            .environmentObject(gameCenterManager)
         }
     }
 }
