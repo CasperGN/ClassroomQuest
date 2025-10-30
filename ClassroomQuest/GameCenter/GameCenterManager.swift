@@ -46,6 +46,12 @@ final class GameCenterManager: ObservableObject {
             }
 
             if let error {
+                let nsError = error as NSError
+                if nsError.domain == GKErrorDomain,
+                   nsError.code == GKError.Code.gameUnrecognized.rawValue {
+                    self.logger.error("Game Center authentication failed because the bundle is not enabled on App Store Connect. Enable Game Center for this app before testing achievements.")
+                }
+
                 let message = self.userFacingMessage(for: error)
                 self.logger.error("Game Center authentication failed: \(message, privacy: .public)")
                 self.authenticationState = .failed(message)
@@ -171,8 +177,10 @@ final class GameCenterManager: ObservableObject {
             switch code {
             case .cancelled:
                 return String(localized: "Sign-in was cancelled. You can try again from Settings.", comment: "Message shown when a parent cancels the Game Center sign-in flow.")
-            case .notAuthenticated, .gameUnrecognized:
+            case .notAuthenticated:
                 return String(localized: "Please sign in to Game Center from Settings to enable achievements.", comment: "Message instructing the parent to sign in to Game Center.")
+            case .gameUnrecognized:
+                return String(localized: "Enable Game Center for this bundle in App Store Connect before testing achievements.", comment: "Message shown when the app bundle is not configured for Game Center.")
             case .notAuthorized, .underage:
                 return String(localized: "Game Center is restricted on this device.", comment: "Message shown when Game Center restrictions are enabled.")
             default:
