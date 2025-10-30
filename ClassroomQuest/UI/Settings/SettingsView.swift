@@ -1,3 +1,4 @@
+internal import CoreData
 import SwiftUI
 
 struct SettingsView: View {
@@ -6,7 +7,9 @@ struct SettingsView: View {
     @EnvironmentObject private var progressStore: ProgressStore
 
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
+    @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.preK.rawValue
     @State private var selectedGrade: GradeBand = .grade2
+    @State private var selectedCurriculumGrade: CurriculumGrade = .preK
 
     var body: some View {
         NavigationStack {
@@ -55,6 +58,23 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Quest Map Level") {
+                    if let stored = CurriculumGrade(rawValue: curriculumPlacementRaw) {
+                        Label("Current quest grade: \(stored.displayName)", systemImage: "map")
+                    }
+
+                    Picker("Quest Grade", selection: $selectedCurriculumGrade) {
+                        ForEach(CurriculumGrade.allCases) { grade in
+                            Text(grade.displayName).tag(grade)
+                        }
+                    }
+
+                    Button("Apply Quest Grade") {
+                        progressStore.applyCurriculumPlacement(grade: selectedCurriculumGrade)
+                        curriculumPlacementRaw = selectedCurriculumGrade.rawValue
+                    }
+                }
+
                 Section("About") {
                     Text("ClassroomQuest is an offline learning adventure designed for kids.")
                 }
@@ -66,6 +86,9 @@ struct SettingsView: View {
             if let stored = GradeBand(rawValue: placementGradeRaw), !placementGradeRaw.isEmpty {
                 selectedGrade = stored
             }
+            if let storedQuestGrade = CurriculumGrade(rawValue: curriculumPlacementRaw) {
+                selectedCurriculumGrade = storedQuestGrade
+            }
         }
     }
 }
@@ -73,4 +96,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(MockPurchaseManager.preview)
+        .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
 }
