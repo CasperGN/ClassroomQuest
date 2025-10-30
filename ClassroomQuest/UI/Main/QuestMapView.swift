@@ -21,6 +21,8 @@ struct QuestMapView: View {
     @State private var selectedSubject: CurriculumSubject = .math
     @State private var selectedNode: QuestNode?
     @State private var activePlayNode: QuestNode?
+    @State private var scrollTarget: ScrollTarget?
+    @State private var isProgrammaticScroll = false
 
     private var progressSnapshot: ProgressStore.CurriculumOverallProgress {
         progressStore.curriculumOverallProgress()
@@ -82,10 +84,26 @@ struct QuestMapView: View {
     }
 
     private var progressHeader: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 16) {
-                levelCard
-                starCard
+        VStack(spacing: 18) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Level \(progressSnapshot.level)")
+                        .font(.cqBody1)
+                        .foregroundStyle(CQTheme.textPrimary)
+
+                    levelProgressBar
+                }
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "star.fill")
+                        .foregroundStyle(CQTheme.yellowAccent)
+                    Text("\(starBalance)")
+                        .font(.cqBody1)
+                        .foregroundStyle(CQTheme.textPrimary)
+                }
+                .padding(.trailing, 8)
             }
             .padding(.horizontal, 24)
 
@@ -97,59 +115,31 @@ struct QuestMapView: View {
         }
     }
 
-    private var levelCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "flag.checkered")
-                Text("Level \(progressSnapshot.level)")
-            }
-            .font(.cqBody1)
-            .foregroundStyle(CQTheme.textPrimary)
-
-            ProgressView(value: progressSnapshot.progressToNext)
-                .tint(CQTheme.yellowAccent)
-                .scaleEffect(x: 1, y: 1.4, anchor: .center)
-
-            let percent = Int(progressSnapshot.progressToNext * 100)
-            Text(progressSnapshot.totalLevels > progressSnapshot.completedLevels
-                ? "\(percent)% to Level \(progressSnapshot.level + 1)"
-                : "Max level reached")
-                .font(.cqCaption)
-                .foregroundStyle(CQTheme.textSecondary)
+    private var levelProgressBar: some View {
+        let progress = progressSnapshot.progressToNext
+        let percent = Int(progress * 100)
+        let labelText: String
+        if progressSnapshot.totalLevels > progressSnapshot.completedLevels {
+            labelText = "\(percent)% to Level \(progressSnapshot.level + 1)"
+        } else {
+            labelText = "Max level reached"
         }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(CQTheme.cardBackground.opacity(0.92))
-                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
-        )
-    }
 
-    private var starCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "star.fill")
-                Text("Stars")
+        return GeometryReader { geometry in
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.18))
+
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(CQTheme.yellowAccent.opacity(0.9))
+                    .frame(width: geometry.size.width * CGFloat(max(0, min(progress, 1))))
+
+                Text(labelText)
+                    .font(.cqCaption)
+                    .foregroundStyle(CQTheme.textPrimary)
             }
-            .font(.cqBody1)
-            .foregroundStyle(CQTheme.textPrimary)
-
-            Text("\(starBalance)")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(CQTheme.yellowAccent)
-
-            Text("Earn stars by conquering quests and revisiting mastered skills.")
-                .font(.cqCaption)
-                .foregroundStyle(CQTheme.textSecondary)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(CQTheme.cardBackground.opacity(0.92))
-                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
-        )
+        .frame(height: 28)
     }
 
     private var subjectChips: some View {
@@ -157,8 +147,16 @@ struct QuestMapView: View {
             HStack(spacing: 12) {
                 ForEach(CurriculumSubject.allCases) { subject in
                     Button {
+                        let targetNode = firstFocusableNode(for: subject)
                         withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) {
                             selectedSubject = subject
+                        }
+                        DispatchQueue.main.async {
+                            if let node = targetNode {
+                                scrollTarget = .node(id: node.id)
+                            } else {
+                                scrollTarget = .subject(subject)
+                            }
                         }
                     } label: {
                         HStack(spacing: 8) {
@@ -202,46 +200,70 @@ struct QuestMapView: View {
                 .foregroundStyle(CQTheme.textSecondary)
                 .multilineTextAlignment(.leading)
         }
-        .padding(20)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(CQTheme.cardBackground)
-                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
-        )
         .padding(.horizontal, 24)
     }
 
     private var mapCanvas: some View {
-        ScrollViewReader { proxy in
-            ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                HStack(alignment: .top, spacing: 160) {
-                    ForEach(CurriculumSubject.allCases) { subject in
-                        let nodes = questNodes(for: subject)
-                        SubjectColumnView(
-                            subject: subject,
-                            nodes: nodes,
-                            isFocused: selectedSubject == subject,
-                            symbolProvider: { symbol(for: $0) },
-                            colorProvider: { color(for: $0, subject: subject) }
-                        ) { node in
-                            selectedSubject = subject
-                            selectedNode = node
+        GeometryReader { containerGeo in
+            let containerMidX = containerGeo.frame(in: .global).midX
+
+            ScrollViewReader { proxy in
+                ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 160) {
+                        ForEach(CurriculumSubject.allCases) { subject in
+                            let nodes = questNodes(for: subject)
+                            SubjectColumnView(
+                                subject: subject,
+                                nodes: nodes,
+                                isFocused: selectedSubject == subject,
+                                containerMidX: containerMidX,
+                                symbolProvider: { symbol(for: $0) },
+                                colorProvider: { color(for: $0, subject: subject) }
+                            ) { node in
+                                selectedSubject = subject
+                                selectedNode = node
+                            }
+                            .id(subject)
                         }
-                        .id(subject)
+                    }
+                    .padding(.horizontal, 80)
+                    .padding(.vertical, 60)
+                }
+                .onChange(of: scrollTarget) { _, target in
+                    guard let target else { return }
+                    isProgrammaticScroll = true
+                    withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
+                        switch target {
+                        case .subject(let subject):
+                            proxy.scrollTo(subject, anchor: .center)
+                        case .node(let id):
+                            proxy.scrollTo(id, anchor: .center)
+                        }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        isProgrammaticScroll = false
+                    }
+                    DispatchQueue.main.async {
+                        scrollTarget = nil
                     }
                 }
-                .padding(.horizontal, 80)
-                .padding(.vertical, 60)
-            }
-            .onChange(of: selectedSubject) { _, newSubject in
-                withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
-                    proxy.scrollTo(newSubject, anchor: .center)
+                .onPreferenceChange(SubjectFocusPreferenceKey.self) { metrics in
+                    guard !isProgrammaticScroll else { return }
+                    guard let nearest = metrics.min(by: { $0.distance < $1.distance }) else { return }
+                    if nearest.subject != selectedSubject {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            selectedSubject = nearest.subject
+                        }
+                    }
                 }
-            }
-            .onAppear {
-                DispatchQueue.main.async {
-                    proxy.scrollTo(selectedSubject, anchor: .center)
+                .onAppear {
+                    DispatchQueue.main.async {
+                        if let node = firstFocusableNode(for: selectedSubject) {
+                            scrollTarget = .node(id: node.id)
+                        } else {
+                            scrollTarget = .subject(selectedSubject)
+                        }
+                    }
                 }
             }
         }
@@ -256,10 +278,15 @@ struct QuestMapView: View {
         }
     }
 
+    private func firstFocusableNode(for subject: CurriculumSubject) -> QuestNode? {
+        let nodes = questNodes(for: subject)
+        return nodes.first(where: { $0.status != .locked }) ?? nodes.first
+    }
+
     private func symbol(for status: QuestNode.Status) -> String {
         switch status {
         case .locked: return "lock.fill"
-        case .current: return "flag.fill"
+        case .current: return "sparkles"
         case .completed: return "star.fill"
         }
     }
@@ -281,10 +308,29 @@ struct QuestMapView: View {
     }
 }
 
+private struct SubjectFocusMetric: Equatable {
+    let subject: CurriculumSubject
+    let distance: CGFloat
+}
+
+private struct SubjectFocusPreferenceKey: PreferenceKey {
+    static var defaultValue: [SubjectFocusMetric] = []
+
+    static func reduce(value: inout [SubjectFocusMetric], nextValue: () -> [SubjectFocusMetric]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private enum ScrollTarget: Equatable {
+    case subject(CurriculumSubject)
+    case node(id: String)
+}
+
 private struct SubjectColumnView: View {
     let subject: CurriculumSubject
     let nodes: [QuestNode]
     let isFocused: Bool
+    let containerMidX: CGFloat
     let symbolProvider: (QuestNode.Status) -> String
     let colorProvider: (QuestNode.Status) -> Color
     let onSelect: (QuestNode) -> Void
@@ -311,6 +357,7 @@ private struct SubjectColumnView: View {
                         } label: {
                             nodeView(for: node)
                         }
+                        .id(node.id)
                         .buttonStyle(.plain)
                         .position(positions[index])
                         .animation(.spring(response: 0.6, dampingFraction: 0.85), value: node.status)
@@ -329,6 +376,20 @@ private struct SubjectColumnView: View {
                 .stroke(isFocused ? subject.accentColor.opacity(0.7) : Color.clear, lineWidth: 2)
         )
         .animation(.easeInOut(duration: 0.3), value: isFocused)
+        .background(
+            GeometryReader { columnGeo in
+                Color.clear
+                    .preference(
+                        key: SubjectFocusPreferenceKey.self,
+                        value: [
+                            SubjectFocusMetric(
+                                subject: subject,
+                                distance: abs(columnGeo.frame(in: .global).midX - containerMidX)
+                            )
+                        ]
+                    )
+            }
+        )
     }
 
     private var columnHeight: CGFloat {
