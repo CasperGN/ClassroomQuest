@@ -17,6 +17,13 @@ struct LearnDashboardView: View {
     let onUpgrade: () -> Void
     let onShowSettings: () -> Void
 
+    private let horizontalPadding: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var headerAvatarSize: CGFloat = 68
+    @ScaledMetric(relativeTo: .title2) private var headerEmojiSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .body) private var supportTileMinHeight: CGFloat = 164
+    @ScaledMetric(relativeTo: .body) private var tileIconSize: CGFloat = 44
+    @ScaledMetric(relativeTo: .body) private var tileButtonHeight: CGFloat = 44
+
     var body: some View {
         ZStack(alignment: .top) {
             CQTheme.background
@@ -29,11 +36,13 @@ struct LearnDashboardView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     headerCard
+                        .padding(.horizontal, horizontalPadding)
 
                     Text("Skills to Explore")
                         .font(.cqTitle2)
                         .foregroundStyle(CQTheme.textPrimary)
-                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, horizontalPadding)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
@@ -43,28 +52,15 @@ struct LearnDashboardView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, horizontalPadding)
                         .padding(.bottom, 8)
                     }
 
-                    if let primarySubject = subjectSummaries.first?.subject {
-                        Button(action: { onStartSubject(primarySubject) }) {
-                            Text("Start Practice")
-                                .font(.cqButton)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 64)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(CQTheme.bluePrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .padding(.horizontal, 16)
-                    }
-
-                    HStack(spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible())], spacing: 16) {
                         starBalanceTile
                         unlimitedTile
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, horizontalPadding)
                     .padding(.bottom, 32)
                 }
                 .padding(.top, 24)
@@ -75,43 +71,32 @@ struct LearnDashboardView: View {
 
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(CQTheme.cardBackground)
-                            .frame(width: 68, height: 68)
-                            .shadow(color: CQTheme.bluePrimary.opacity(0.15), radius: 12, x: 0, y: 8)
-                        Text("😊")
-                            .font(.system(size: 36))
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Today's Quest")
-                            .font(.cqTitle2)
-                            .foregroundStyle(CQTheme.textPrimary)
-                        Text("Keep your streak alive and earn stars!")
-                            .font(.cqBody2)
-                            .foregroundStyle(CQTheme.textSecondary)
-                    }
-                }
-
-                Spacer()
-
-                Button(action: onShowSettings) {
-                    Image(systemName: "lock")
-                        .font(.title3)
-                        .foregroundStyle(CQTheme.bluePrimary)
-                        .padding(12)
-                        .background(CQTheme.cardBackground.opacity(0.7))
-                        .clipShape(Circle())
+            HStack(alignment: .top, spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(CQTheme.cardBackground)
+                        .frame(width: headerAvatarSize, height: headerAvatarSize)
                         .shadow(color: CQTheme.bluePrimary.opacity(0.15), radius: 12, x: 0, y: 8)
+                    Text("😊")
+                        .font(.system(size: headerEmojiSize))
                 }
-                .accessibilityLabel("Parent settings")
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Today's Quest")
+                        .font(.system(.title2, design: .rounded))
+                        .foregroundStyle(CQTheme.textPrimary)
+                        .minimumScaleFactor(0.85)
+                    Text("Keep your streak alive and earn stars!")
+                        .font(.system(.callout, design: .rounded))
+                        .foregroundStyle(CQTheme.textSecondary)
+                }
+
+                Spacer(minLength: 12)
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("XP Progress")
-                    .font(.cqCaption)
+                    .font(.system(.footnote, design: .rounded).weight(.medium))
                     .foregroundStyle(CQTheme.textSecondary)
                 GeometryReader { geometry in
                     Capsule()
@@ -132,7 +117,7 @@ struct LearnDashboardView: View {
                 }
                 .frame(height: 18)
                 Text("Level \(max(1, Int(xpProgress * 10))) Adventurer")
-                    .font(.cqCaption)
+                    .font(.system(.footnote, design: .rounded).weight(.medium))
                     .foregroundStyle(CQTheme.textPrimary.opacity(0.8))
             }
         }
@@ -142,70 +127,78 @@ struct LearnDashboardView: View {
                 .fill(CQTheme.cardBackground)
                 .shadow(color: CQTheme.bluePrimary.opacity(0.12), radius: 24, x: 0, y: 16)
         )
-        .padding(.horizontal, 16)
     }
 
     private var starBalanceTile: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "star.fill")
-                    .foregroundStyle(CQTheme.yellowAccent)
-                    .font(.title2)
-                Spacer()
-                Text("⭐️")
-                    .font(.title)
-            }
-            Text("Stars")
-                .font(.cqBody1)
-                .foregroundStyle(CQTheme.textPrimary)
-            Text("You have \(starBalance) stars ready to spend.")
-                .font(.cqCaption)
-                .foregroundStyle(CQTheme.textSecondary)
-            Button(action: onOpenShop) {
-                Text("Go to Shop")
-                    .font(.cqCaption)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 16)
-                    .background(CQTheme.yellowAccent.opacity(0.2))
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(CQTheme.cardBackground)
-                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+        supportTile(
+            iconName: "star.fill",
+            tint: CQTheme.yellowAccent,
+            title: "Stars",
+            message: "You have \(starBalance) stars ready to spend.",
+            buttonTitle: "Go to Shop",
+            buttonBackground: CQTheme.yellowAccent.opacity(0.18),
+            action: onOpenShop
         )
     }
 
     private var unlimitedTile: some View {
+        supportTile(
+            iconName: isUnlimitedUnlocked ? "checkmark.seal.fill" : "sparkles",
+            tint: isUnlimitedUnlocked ? CQTheme.greenSecondary : CQTheme.bluePrimary,
+            title: isUnlimitedUnlocked ? "Unlimited Unlocked" : "Unlock Unlimited",
+            message: isUnlimitedUnlocked ? "Enjoy endless quests every day." : "Parents can enable endless quests with a tap.",
+            buttonTitle: isUnlimitedUnlocked ? "See Benefits" : "Ask a Grown-up",
+            buttonBackground: CQTheme.bluePrimary.opacity(0.12),
+            action: onUpgrade
+        )
+    }
+
+    private func supportTile(
+        iconName: String,
+        tint: Color,
+        title: String,
+        message: String,
+        buttonTitle: String,
+        buttonBackground: Color,
+        action: @escaping () -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: isUnlimitedUnlocked ? "checkmark.seal.fill" : "sparkles")
-                    .font(.title2)
-                    .foregroundStyle(isUnlimitedUnlocked ? CQTheme.greenSecondary : CQTheme.bluePrimary)
-                Spacer()
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(tint)
+                    .font(.system(size: tileIconSize, weight: .semibold, design: .rounded))
+                    .frame(width: tileIconSize + 12, height: tileIconSize + 12)
+                    .background(tint.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(CQTheme.textPrimary)
+                        .minimumScaleFactor(0.9)
+                    Text(message)
+                        .font(.system(.subheadline, design: .rounded))
+                        .foregroundStyle(CQTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            Text(isUnlimitedUnlocked ? "Unlimited Unlocked" : "Unlock Unlimited")
-                .font(.cqBody1)
-                .foregroundStyle(CQTheme.textPrimary)
-            Text(isUnlimitedUnlocked ? "Enjoy endless quests every day." : "Parents can enable endless quests with a tap.")
-                .font(.cqCaption)
-                .foregroundStyle(CQTheme.textSecondary)
-            Button(action: onUpgrade) {
-                Text(isUnlimitedUnlocked ? "See Benefits" : "Ask a Grown-up")
-                    .font(.cqCaption)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 16)
-                    .background(CQTheme.bluePrimary.opacity(0.15))
-                    .clipShape(Capsule())
+
+            Spacer(minLength: 0)
+
+            Button(action: action) {
+                Text(buttonTitle)
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: tileButtonHeight)
+                    .background(buttonBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity)
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: supportTileMinHeight, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(CQTheme.cardBackground)
