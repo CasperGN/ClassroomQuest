@@ -2,9 +2,6 @@ import Combine
 import Foundation
 import GameKit
 import os
-#if canImport(UIKit)
-import UIKit
-#endif
 
 @MainActor
 final class GameCenterManager: ObservableObject {
@@ -23,37 +20,21 @@ final class GameCenterManager: ObservableObject {
 
     func authenticate() {
         guard authenticationState != .authenticating else { return }
-        authenticationState = .authenticating
-        GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
-            guard let self else { return }
-            if let viewController {
-                self.presentAuthenticationController(viewController)
-                return
-            }
-
-            if GKLocalPlayer.local.isAuthenticated {
-                self.authenticationState = .authenticated
-                self.configureAccessPoint(isActive: true)
-                self.flushPendingReports()
-            } else if let error {
-                self.logger.error("Game Center authentication failed: \(error.localizedDescription, privacy: .public)")
-                self.authenticationState = .failed(error.localizedDescription)
-                self.configureAccessPoint(isActive: false)
-            } else {
-                self.authenticationState = .idle
-                self.configureAccessPoint(isActive: false)
-            }
+        if case .authenticated = authenticationState, GKLocalPlayer.local.isAuthenticated {
+            configureAccessPoint(isActive: true)
+            return
         }
+        authenticationState = .authenticating
+
+        Task { await authenticatePlayer() }
     }
 
     func recordSession(report: GameSessionReport) {
         if case .authenticated = authenticationState, GKLocalPlayer.local.isAuthenticated {
-            submit(report: report)
+            Task { await submit(report: report) }
         } else {
             pendingReports.append(report)
-            if authenticationState == .idle {
-                authenticate()
-            }
+            authenticate()
         }
     }
 
@@ -62,12 +43,33 @@ final class GameCenterManager: ObservableObject {
         configureAccessPoint(isActive: GKLocalPlayer.local.isAuthenticated)
     }
 
-    private func flushPendingReports() {
+    private func authenticatePlayer() async {
+        do {
+            try await GKLocalPlayer.local.authenticate()
+
+            guard GKLocalPlayer.local.isAuthenticated else {
+                authenticationState = .idle
+                configureAccessPoint(isActive: false)
+                return
+            }
+
+            authenticationState = .authenticated
+            configureAccessPoint(isActive: true)
+            await flushPendingReports()
+        } catch {
+            logger.error("Game Center authentication failed: \(error.localizedDescription, privacy: .public)")
+            authenticationState = .failed(error.localizedDescription)
+            configureAccessPoint(isActive: false)
+        }
+    }
+
+    private func flushPendingReports() async {
         guard case .authenticated = authenticationState else { return }
         let reports = pendingReports
         pendingReports.removeAll()
+
         for report in reports {
-            submit(report: report)
+            await submit(report: report)
         }
     }
 
@@ -103,55 +105,33 @@ final class GameCenterManager: ObservableObject {
         return achievements
     }
 
-    private func buildLeaderboardEntries(for report: GameSessionReport) -> [GKScore] {
-        guard report.subject == .math else { return [] }
-        let score = GKScore(leaderboardIdentifier: GameCenterLeaderboard.totalCorrectAnswers.rawValue)
-        score.value = Int64(report.totalCorrectAnswers)
-        score.context = 0
-        return [score]
-    }
-
     private func configureAccessPoint(isActive: Bool) {
-        GKAccessPoint.shared.showHighlights = false
         GKAccessPoint.shared.location = .topLeading
         GKAccessPoint.shared.isActive = isActive && accessPointRequested
     }
 
-    private func presentAuthenticationController(_ controller: UIViewController) {
-    #if canImport(UIKit)
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }),
-              let window = scene.windows.first(where: { $0.isKeyWindow }),
-              let root = window.rootViewController else {
-            logger.error("Unable to present Game Center login controller")
-            return
-        }
-
-        var presenter: UIViewController = root
-        while let presented = presenter.presentedViewController {
-            presenter = presented
-        }
-        presenter.present(controller, animated: true)
-    #endif
-    }
-    private func submit(report: GameSessionReport) {
+    private func submit(report: GameSessionReport) async {
         let achievements = buildAchievements(for: report)
+
         if !achievements.isEmpty {
-            GKAchievement.report(achievements) { [weak self] error in
-                if let error {
-                    self?.logger.error("Failed to report achievements: \(error.localizedDescription, privacy: .public)")
-                }
+            do {
+                try await GKAchievement.report(achievements)
+            } catch {
+                logger.error("Failed to report achievements: \(error.localizedDescription, privacy: .public)")
             }
         }
 
-        let leaderboardEntries = buildLeaderboardEntries(for: report)
-        if !leaderboardEntries.isEmpty {
-            GKScore.report(leaderboardEntries) { [weak self] error in
-                if let error {
-                    self?.logger.error("Failed to report leaderboard score: \(error.localizedDescription, privacy: .public)")
-                }
-            }
+        guard report.subject == .math else { return }
+
+        do {
+            try await GKLeaderboard.submitScore(
+                report.totalCorrectAnswers,
+                context: 0,
+                player: GKLocalPlayer.local,
+                leaderboardIDs: [GameCenterLeaderboard.totalCorrectAnswers.rawValue]
+            )
+        } catch {
+            logger.error("Failed to report leaderboard score: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

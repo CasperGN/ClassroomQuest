@@ -41,10 +41,10 @@ struct ParentDashboardView: View {
         }
         .background(CQTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showAchievements) {
-            GameCenterDashboardView(viewState: .achievements)
+            GameCenterDashboardView(destination: .achievements)
         }
         .sheet(isPresented: $showLeaderboard) {
-            GameCenterDashboardView(viewState: .leaderboards)
+            GameCenterDashboardView(destination: .leaderboards)
         }
         .onAppear {
             gameCenterManager.setAccessPointVisible(isAccessPointEnabled)
@@ -126,13 +126,13 @@ struct ParentDashboardView: View {
                         showAchievements = true
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!isGameCenterReady)
+                    .disabled(!isGameCenterReady || !GameCenterDashboardView.isAvailable)
 
                     Button("View Leaderboard") {
                         showLeaderboard = true
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!isGameCenterReady)
+                    .disabled(!isGameCenterReady || !GameCenterDashboardView.isAvailable)
                 }
 
                 Toggle("Show Game Center icon for kids", isOn: $isAccessPointEnabled)
@@ -150,7 +150,9 @@ struct ParentDashboardView: View {
     }
 
     private var isGameCenterReady: Bool {
-        if case .authenticated = gameCenterManager.authenticationState, GKLocalPlayer.local.isAuthenticated {
+        if case .authenticated = gameCenterManager.authenticationState,
+           GKLocalPlayer.local.isAuthenticated,
+           GameCenterDashboardView.isAvailable {
             return true
         }
         return false
@@ -163,7 +165,11 @@ struct ParentDashboardView: View {
         case .authenticating:
             return "Connecting to Game Center…"
         case .authenticated:
-            return "Game Center connected. Achievements are tracking."
+            if GameCenterDashboardView.isAvailable {
+                return "Game Center connected. Achievements are tracking."
+            } else {
+                return "Game Center is connected. Update your device to view dashboards."
+            }
         case .failed(let message):
             return "Sign-in failed: \(message)"
         }
