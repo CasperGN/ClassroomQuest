@@ -46,10 +46,12 @@ struct QuestMapView: View {
             }
             .sheet(item: $selectedLevel) { level in
                 let status = statusForLevel(level)
+                let record = curriculumStore.levelRecord(for: level, subject: selectedSubject)
                 QuestDetailSheet(
                     level: level,
                     subject: selectedSubject,
                     status: status,
+                    record: record,
                     onStart: {
                         selectedLevel = nil
                         if status != .locked {
@@ -62,11 +64,9 @@ struct QuestMapView: View {
             .sheet(item: $activePlayLevel) { level in
                 CurriculumLevelPlayView(
                     level: level,
-                    subject: selectedSubject,
-                    onComplete: {
-                        curriculumStore.markLevelCompleted(level, subject: selectedSubject)
-                    }
+                    subject: selectedSubject
                 )
+                .environmentObject(curriculumStore)
             }
             .navigationTitle("Quest Map")
             .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
@@ -167,6 +167,14 @@ struct QuestMapView: View {
                                 .stroke(color(for: node.status), lineWidth: node.status == .current ? 4 : 2)
                                 .shadow(color: node.status == .completed ? CQTheme.yellowAccent.opacity(0.6) : .clear, radius: 12)
                         )
+                        .overlay(alignment: .topTrailing) {
+                            if let record = curriculumStore.levelRecord(for: node.level, subject: selectedSubject), record.needsReview {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(CQTheme.orangeWarning)
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
 
                     VStack(spacing: 2) {
                         Text(node.level.title)
@@ -242,6 +250,7 @@ private struct QuestDetailSheet: View {
     let level: CurriculumLevel
     let subject: CurriculumSubject
     let status: QuestNode.Status
+    let record: CurriculumProgressStore.LevelRecord?
     let onStart: () -> Void
 
     var body: some View {
@@ -303,6 +312,22 @@ private struct QuestDetailSheet: View {
                 }
 
                 infoSection(title: "Reward", icon: "star.fill", content: level.reward)
+
+                if let record, record.attempts > 0 {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Practice Attempts", systemImage: "number")
+                            .font(.cqCaption)
+                            .foregroundStyle(CQTheme.textPrimary)
+                        Text("Attempts logged: \(record.attempts). Best quest completion so far: \(record.bestCompletedQuestCount)/\(level.questsRequiredForMastery) required quests.")
+                            .font(.cqBody2)
+                            .foregroundStyle(CQTheme.textSecondary)
+                        if record.needsReview {
+                            Text("This level was unlocked with coach assist and should be reviewed together soon.")
+                                .font(.cqCaption)
+                                .foregroundStyle(CQTheme.orangeWarning)
+                        }
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
@@ -349,10 +374,11 @@ private struct QuestDetailSheet: View {
 private struct CurriculumLevelPlayView: View {
     let level: CurriculumLevel
     let subject: CurriculumSubject
-    let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var curriculumStore: CurriculumProgressStore
     @State private var completedChecklist: [UUID: Set<Int>] = [:]
+    @State private var didRegisterOutcome = false
 
     private var completedQuestCount: Int {
         level.quests.filter { quest in
@@ -385,8 +411,26 @@ private struct CurriculumLevelPlayView: View {
             .navigationTitle(level.title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("Close") {
+                        curriculumStore.recordIncompleteAttempt(
+                            for: level,
+                            subject: subject,
+                            completedQuests: completedQuestCount
+                        )
+                        didRegisterOutcome = true
+                        dismiss()
+                    }
                 }
+            }
+        }
+        .onDisappear {
+            if !didRegisterOutcome {
+                curriculumStore.recordIncompleteAttempt(
+                    for: level,
+                    subject: subject,
+                    completedQuests: completedQuestCount
+                )
+                didRegisterOutcome = true
             }
         }
     }
@@ -443,7 +487,13 @@ private struct CurriculumLevelPlayView: View {
                 .foregroundStyle(CQTheme.textPrimary)
 
             Button {
-                onComplete()
+                curriculumStore.markLevelCompleted(
+                    level,
+                    subject: subject,
+                    completedQuests: completedQuestCount,
+                    assisted: false
+                )
+                didRegisterOutcome = true
                 dismiss()
             } label: {
                 Text(completedQuestCount >= level.questsRequiredForMastery ? "Finish Level" : "Keep Working")
@@ -452,6 +502,29 @@ private struct CurriculumLevelPlayView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(completedQuestCount < level.questsRequiredForMastery)
+
+            if curriculumStore.shouldOfferAssistedUnlock(
+                for: level,
+                subject: subject,
+                pendingCompletedQuests: completedQuestCount
+            ) {
+                Button {
+                    curriculumStore.markLevelCompleted(
+                        level,
+                        subject: subject,
+                        completedQuests: completedQuestCount,
+                        assisted: true
+                    )
+                    didRegisterOutcome = true
+                    dismiss()
+                } label: {
+                    Text("Finish with Coach Assist")
+                        .font(.cqBody1)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(CQTheme.purpleLanguage)
+            }
 
             Text("Finishing unlocks the next quest and awards: \(level.reward)")
                 .font(.cqCaption)

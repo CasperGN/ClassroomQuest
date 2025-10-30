@@ -6,6 +6,7 @@ enum CQTheme {
     static let greenSecondary = Color("CQGreenSecondary")
     static let purpleLanguage = Color("CQPurpleLang")
     static let goldReligious = Color("CQGoldReligious")
+    static let orangeWarning = Color(.systemOrange)
     static let textPrimary = Color(.label)
     static let textSecondary = Color(.secondaryLabel)
     static let cardBackground = Color(.secondarySystemBackground)
