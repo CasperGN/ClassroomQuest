@@ -24,6 +24,13 @@ final class ProgressStore: ObservableObject {
         var needsReview: Bool { assistedUnlock }
     }
 
+    struct CurriculumOverallProgress {
+        let level: Int
+        let progressToNext: Double
+        let completedLevels: Int
+        let totalLevels: Int
+    }
+
     private struct CurriculumStoredState: Codable {
         var highestUnlockedIndex: [String: Int]
         var placementGradeRaw: String?
@@ -314,6 +321,40 @@ final class ProgressStore: ObservableObject {
 
     func curriculumLevelRecord(for level: CurriculumLevel, subject: CurriculumSubject) -> CurriculumLevelRecord? {
         curriculumLevelRecords[subject]?[level.id]
+    }
+
+    func curriculumOverallProgress() -> CurriculumOverallProgress {
+        let totalLevels = CurriculumCatalog.totalLevelCount
+        guard totalLevels > 0 else {
+            return CurriculumOverallProgress(level: 1, progressToNext: 0, completedLevels: 0, totalLevels: 0)
+        }
+
+        var completedLevels = 0
+        var bestFractionTowardNext: Double = 0
+
+        for subject in CurriculumSubject.allCases {
+            let path = CurriculumCatalog.subjectPath(for: subject)
+            let unlocked = min(curriculumHighestUnlockedIndex[subject] ?? 0, path.levels.count)
+            completedLevels += min(unlocked, path.levels.count)
+
+            guard unlocked < path.levels.count else { continue }
+            let currentLevel = path.levels[unlocked]
+            let record = curriculumLevelRecords[subject]?[currentLevel.id]
+            let required = max(1, currentLevel.questsRequiredForMastery)
+            let fraction = min(1, max(0, Double(record?.bestCompletedQuestCount ?? 0) / Double(required)))
+            bestFractionTowardNext = max(bestFractionTowardNext, fraction)
+        }
+
+        let cappedCompleted = min(totalLevels, completedLevels)
+        let levelNumber = cappedCompleted + 1
+        let progressToNext = cappedCompleted >= totalLevels ? 1 : bestFractionTowardNext
+
+        return CurriculumOverallProgress(
+            level: levelNumber,
+            progressToNext: progressToNext,
+            completedLevels: completedLevels,
+            totalLevels: totalLevels
+        )
     }
 
     private func persistCurriculum() {

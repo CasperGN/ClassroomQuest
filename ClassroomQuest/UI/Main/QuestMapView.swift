@@ -1,22 +1,34 @@
 import SwiftUI
 
-struct QuestNode: Identifiable {
+struct QuestNode: Identifiable, Equatable {
     enum Status { case locked, current, completed }
 
     let level: CurriculumLevel
+    let subject: CurriculumSubject
     let status: Status
+    let needsReview: Bool
 
-    var id: CurriculumLevel.ID { level.id }
+    var id: String { "\(subject.rawValue)-\(level.id.uuidString)" }
+
+    static func == (lhs: QuestNode, rhs: QuestNode) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 struct QuestMapView: View {
     @EnvironmentObject private var progressStore: ProgressStore
     @State private var selectedSubject: CurriculumSubject = .math
-    @State private var selectedLevel: CurriculumLevel?
-    @State private var activePlayLevel: CurriculumLevel?
+    @State private var selectedNode: QuestNode?
+    @State private var activePlayNode: QuestNode?
 
-    private var path: CurriculumSubjectPath {
-        CurriculumCatalog.subjectPath(for: selectedSubject)
+    private var progressSnapshot: ProgressStore.CurriculumOverallProgress {
+        progressStore.curriculumOverallProgress()
+    }
+
+    private var starBalance: Int {
+        guard let progress = try? progressStore.subjectProgress(for: .math) else { return 0 }
+        let correct = Int(progress.totalCorrectAnswers)
+        return Int(progress.totalSessions) * 12 + correct
     }
 
     var body: some View {
@@ -25,46 +37,41 @@ struct QuestMapView: View {
                 LinearGradient.cqSoftAdventure
                     .ignoresSafeArea()
 
-                VStack(spacing: 20) {
-                    header
+                VStack(spacing: 24) {
+                    progressHeader
 
-                    subjectPicker
+                    subjectChips
 
                     storylineCard
 
-                    GeometryReader { geometry in
-                        ZStack {
-                            mapPath(in: geometry.size)
-                            questNodes(in: geometry.size)
-                        }
-                    }
-                    .padding(20)
-                    .frame(minHeight: 420)
+                    mapCanvas
+                        .frame(minHeight: 520)
 
-                    Spacer(minLength: 32)
+                    Spacer(minLength: 12)
                 }
+                .padding(.top, 24)
             }
-            .sheet(item: $selectedLevel) { level in
-                let status = statusForLevel(level)
-                let record = progressStore.curriculumLevelRecord(for: level, subject: selectedSubject)
+            .sheet(item: $selectedNode) { node in
+                let status = statusForLevel(node.level, subject: node.subject)
+                let record = progressStore.curriculumLevelRecord(for: node.level, subject: node.subject)
                 QuestDetailSheet(
-                    level: level,
-                    subject: selectedSubject,
+                    level: node.level,
+                    subject: node.subject,
                     status: status,
                     record: record,
                     onStart: {
-                        selectedLevel = nil
+                        selectedNode = nil
                         if status != .locked {
-                            activePlayLevel = level
+                            activePlayNode = node
                         }
                     }
                 )
                 .presentationDetents([.medium, .large])
             }
-            .sheet(item: $activePlayLevel) { level in
+            .sheet(item: $activePlayNode) { node in
                 CurriculumLevelPlayView(
-                    level: level,
-                    subject: selectedSubject
+                    level: node.level,
+                    subject: node.subject
                 )
                 .environmentObject(progressStore)
             }
@@ -73,35 +80,115 @@ struct QuestMapView: View {
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 8) {
-            Text("Journey Progress")
-                .font(.cqTitle2)
-                .foregroundStyle(CQTheme.textPrimary)
+    private var progressHeader: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                levelCard
+                starCard
+            }
+            .padding(.horizontal, 24)
 
-            Text("Climb each subject path from the ground up. Finish the active level to unlock the next quest above.")
+            Text("Guide your hero up each subject path. Tap a glowing quest node to dive in!")
                 .font(.cqBody2)
                 .foregroundStyle(CQTheme.textSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 36)
         }
-        .padding(.top, 24)
     }
 
-    private var subjectPicker: some View {
-        Picker("Subject", selection: $selectedSubject) {
-            ForEach(CurriculumSubject.allCases) { subject in
-                Text(subject.displayName)
-                    .tag(subject)
+    private var levelCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "flag.checkered")
+                Text("Level \(progressSnapshot.level)")
             }
+            .font(.cqBody1)
+            .foregroundStyle(CQTheme.textPrimary)
+
+            ProgressView(value: progressSnapshot.progressToNext)
+                .tint(CQTheme.yellowAccent)
+                .scaleEffect(x: 1, y: 1.4, anchor: .center)
+
+            let percent = Int(progressSnapshot.progressToNext * 100)
+            Text(progressSnapshot.totalLevels > progressSnapshot.completedLevels
+                ? "\(percent)% to Level \(progressSnapshot.level + 1)"
+                : "Max level reached")
+                .font(.cqCaption)
+                .foregroundStyle(CQTheme.textSecondary)
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 24)
+        .padding(18)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(CQTheme.cardBackground.opacity(0.92))
+                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
+        )
+    }
+
+    private var starCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "star.fill")
+                Text("Stars")
+            }
+            .font(.cqBody1)
+            .foregroundStyle(CQTheme.textPrimary)
+
+            Text("\(starBalance)")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(CQTheme.yellowAccent)
+
+            Text("Earn stars by conquering quests and revisiting mastered skills.")
+                .font(.cqCaption)
+                .foregroundStyle(CQTheme.textSecondary)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(CQTheme.cardBackground.opacity(0.92))
+                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
+        )
+    }
+
+    private var subjectChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(CurriculumSubject.allCases) { subject in
+                    Button {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) {
+                            selectedSubject = subject
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: subject.iconSystemName)
+                            Text(subject.displayName)
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .background(
+                            Capsule()
+                                .fill(selectedSubject == subject
+                                    ? subject.accentColor.opacity(0.2)
+                                    : Color.white.opacity(0.12))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(selectedSubject == subject ? subject.accentColor : Color.clear, lineWidth: 1.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 24)
+        }
     }
 
     private var storylineCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        let path = CurriculumCatalog.subjectPath(for: selectedSubject)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
                 Image(systemName: selectedSubject.iconSystemName)
                     .foregroundStyle(selectedSubject.accentColor)
                 Text("Storyline")
@@ -117,83 +204,54 @@ struct QuestMapView: View {
         .padding(20)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(CQTheme.cardBackground)
                 .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
         )
         .padding(.horizontal, 24)
     }
 
-    private func mapPath(in size: CGSize) -> some View {
-        let positions = nodePositions(in: size)
-
-        return Path { path in
-            guard let first = positions.first?.1 else { return }
-            path.move(to: first)
-            for (index, element) in positions.enumerated() where index > 0 {
-                let previous = positions[index - 1].1
-                let current = element.1
-                let control = CGPoint(
-                    x: (previous.x + current.x) / 2,
-                    y: min(previous.y, current.y) - 80
-                )
-                path.addQuadCurve(to: current, control: control)
-            }
-        }
-        .stroke(style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round))
-        .fill(Color(.tertiarySystemFill))
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 6)
-    }
-
-    private func questNodes(in size: CGSize) -> some View {
-        let positions = nodePositions(in: size)
-
-        return ForEach(positions, id: \.0.id) { node, point in
-            Button {
-                selectedLevel = node.level
-            } label: {
-                VStack(spacing: 6) {
-                    Image(systemName: symbol(for: node.status))
-                        .font(.title2)
-                        .foregroundStyle(color(for: node.status))
-                        .padding(16)
-                        .background(
-                            Circle()
-                                .fill(CQTheme.cardBackground)
-                                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(color(for: node.status), lineWidth: node.status == .current ? 4 : 2)
-                                .shadow(color: node.status == .completed ? CQTheme.yellowAccent.opacity(0.6) : .clear, radius: 12)
-                        )
-                        .overlay(alignment: .topTrailing) {
-                            if let record = progressStore.curriculumLevelRecord(for: node.level, subject: selectedSubject), record.needsReview {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(CQTheme.orangeWarning)
-                                    .offset(x: 8, y: -8)
-                            }
+    private var mapCanvas: some View {
+        ScrollViewReader { proxy in
+            ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                HStack(alignment: .top, spacing: 160) {
+                    ForEach(CurriculumSubject.allCases) { subject in
+                        let nodes = questNodes(for: subject)
+                        SubjectColumnView(
+                            subject: subject,
+                            nodes: nodes,
+                            isFocused: selectedSubject == subject,
+                            symbolProvider: { symbol(for: $0) },
+                            colorProvider: { color(for: $0, subject: subject) }
+                        ) { node in
+                            selectedSubject = subject
+                            selectedNode = node
                         }
-
-                    VStack(spacing: 2) {
-                        Text(node.level.title)
-                            .font(.cqCaption)
-                            .foregroundStyle(CQTheme.textPrimary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: 140)
-
-                        Text(node.level.grade.displayName)
-                            .font(.cqCaption)
-                            .foregroundStyle(CQTheme.textSecondary)
+                        .id(subject)
                     }
                 }
-                .scaleEffect(node.status == .current ? 1.05 : 1)
-                .opacity(node.status == .locked ? 0.55 : 1)
+                .padding(.horizontal, 80)
+                .padding(.vertical, 60)
             }
-            .buttonStyle(.plain)
-            .position(point)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: node.status)
+            .onChange(of: selectedSubject) { subject in
+                withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
+                    proxy.scrollTo(subject, anchor: .center)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.async {
+                    proxy.scrollTo(selectedSubject, anchor: .center)
+                }
+            }
+        }
+    }
+
+    private func questNodes(for subject: CurriculumSubject) -> [QuestNode] {
+        let path = CurriculumCatalog.subjectPath(for: subject)
+        return path.levels.map { level in
+            let status = statusForLevel(level, subject: subject)
+            let needsReview = progressStore.curriculumLevelRecord(for: level, subject: subject)?.needsReview ?? false
+            return QuestNode(level: level, subject: subject, status: status, needsReview: needsReview)
         }
     }
 
@@ -205,44 +263,154 @@ struct QuestMapView: View {
         }
     }
 
-    private func color(for status: QuestNode.Status) -> Color {
+    private func color(for status: QuestNode.Status, subject: CurriculumSubject) -> Color {
         switch status {
         case .locked: return CQTheme.textSecondary
-        case .current: return selectedSubject.accentColor
+        case .current: return subject.accentColor
         case .completed: return CQTheme.yellowAccent
         }
     }
 
-    private var questNodesData: [QuestNode] {
-        let levels = path.levels
-        return levels.map { level in
-            let status = statusForLevel(level)
-            return QuestNode(level: level, status: status)
-        }
-    }
-
-    private func nodePositions(in size: CGSize) -> [(QuestNode, CGPoint)] {
-        let nodes = questNodesData
-        guard !nodes.isEmpty else { return [] }
-        let step = size.height / CGFloat(nodes.count + 1)
-        return nodes.enumerated().map { index, node in
-            let y = size.height - CGFloat(index + 1) * step
-            let xFactor: CGFloat
-            if nodes.count == 1 {
-                xFactor = 0.5
-            } else {
-                xFactor = (index % 2 == 0) ? 0.28 : 0.72
-            }
-            return (node, CGPoint(x: size.width * xFactor, y: y))
-        }
-    }
-
-    private func statusForLevel(_ level: CurriculumLevel) -> QuestNode.Status {
-        switch progressStore.curriculumStatus(for: level, subject: selectedSubject) {
+    private func statusForLevel(_ level: CurriculumLevel, subject: CurriculumSubject) -> QuestNode.Status {
+        switch progressStore.curriculumStatus(for: level, subject: subject) {
         case .locked: return .locked
         case .current: return .current
         case .completed: return .completed
         }
+    }
+}
+
+private struct SubjectColumnView: View {
+    let subject: CurriculumSubject
+    let nodes: [QuestNode]
+    let isFocused: Bool
+    let symbolProvider: (QuestNode.Status) -> String
+    let colorProvider: (QuestNode.Status) -> Color
+    let onSelect: (QuestNode) -> Void
+
+    private let columnWidth: CGFloat = 220
+    private let verticalSpacing: CGFloat = 160
+    private let topOffset: CGFloat = 100
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Label(subject.displayName, systemImage: subject.iconSystemName)
+                .font(.cqBody1)
+                .foregroundStyle(isFocused ? subject.accentColor : CQTheme.textSecondary)
+                .padding(.bottom, 4)
+
+            GeometryReader { geometry in
+                let positions = nodePositions(in: geometry.size)
+                ZStack {
+                    mapPath(positions: positions, size: geometry.size)
+
+                    ForEach(Array(zip(nodes.indices, nodes)), id: \.1.id) { index, node in
+                        Button {
+                            onSelect(node)
+                        } label: {
+                            nodeView(for: node)
+                        }
+                        .buttonStyle(.plain)
+                        .position(positions[index])
+                        .animation(.spring(response: 0.6, dampingFraction: 0.85), value: node.status)
+                    }
+                }
+            }
+            .frame(width: columnWidth, height: columnHeight)
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(isFocused ? Color.white.opacity(0.22) : Color.white.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(isFocused ? subject.accentColor.opacity(0.7) : Color.clear, lineWidth: 2)
+        )
+        .animation(.easeInOut(duration: 0.3), value: isFocused)
+    }
+
+    private var columnHeight: CGFloat {
+        let segments = max(nodes.count - 1, 0)
+        return topOffset + CGFloat(segments) * verticalSpacing + 140
+    }
+
+    private func nodePositions(in size: CGSize) -> [CGPoint] {
+        nodes.enumerated().map { index, _ in
+            let horizontalOffset: CGFloat = (index % 2 == 0) ? -32 : 32
+            let x = size.width / 2 + horizontalOffset
+            let y = topOffset + CGFloat(index) * verticalSpacing
+            return CGPoint(x: x, y: y)
+        }
+    }
+
+    @ViewBuilder
+    private func mapPath(positions: [CGPoint], size: CGSize) -> some View {
+        Canvas { context, _ in
+            guard positions.count > 1 else { return }
+            var path = Path()
+            path.move(to: positions[0])
+            for index in 1..<positions.count {
+                let previous = positions[index - 1]
+                let current = positions[index]
+                let control = CGPoint(
+                    x: (previous.x + current.x) / 2,
+                    y: min(previous.y, current.y) - 90
+                )
+                path.addQuadCurve(to: current, control: control)
+            }
+            context.stroke(
+                path,
+                with: .color(subject.accentColor.opacity(isFocused ? 0.6 : 0.35)),
+                lineWidth: isFocused ? 12 : 9
+            )
+            context.addFilter(.shadow(color: .init(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.18), radius: 8, offset: CGSize(width: 0, height: 6)))
+            context.stroke(
+                path,
+                with: .color(Color.white.opacity(0.1)),
+                lineWidth: isFocused ? 16 : 12
+            )
+        }
+    }
+
+    private func nodeView(for node: QuestNode) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbolProvider(node.status))
+                .font(.title2)
+                .foregroundStyle(colorProvider(node.status))
+                .padding(16)
+                .background(
+                    Circle()
+                        .fill(CQTheme.cardBackground)
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 6)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(colorProvider(node.status), lineWidth: node.status == .current ? 4 : 2)
+                )
+                .overlay(alignment: .topTrailing) {
+                    if node.needsReview {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(CQTheme.orangeWarning)
+                            .offset(x: 8, y: -8)
+                    }
+                }
+
+            VStack(spacing: 2) {
+                Text(node.level.title)
+                    .font(.cqCaption)
+                    .foregroundStyle(CQTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 150)
+
+                Text(node.level.grade.displayName)
+                    .font(.cqCaption)
+                    .foregroundStyle(CQTheme.textSecondary)
+            }
+        }
+        .scaleEffect(node.status == .current ? 1.08 : 1)
+        .opacity(node.status == .locked ? 0.55 : 1)
     }
 }
 

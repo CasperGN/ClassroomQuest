@@ -126,6 +126,12 @@ enum CurriculumCatalog {
         }
     }
 
+    static var totalLevelCount: Int {
+        CurriculumSubject.allCases.reduce(into: 0) { result, subject in
+            result += subjectPath(for: subject).levels.count
+        }
+    }
+
     static func indexOfFirstLevel(for grade: CurriculumGrade, subject: CurriculumSubject) -> Int? {
         let levels = subjectPath(for: subject).levels
         return levels.firstIndex { $0.grade == grade }
