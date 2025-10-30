@@ -8,6 +8,7 @@ final class ProgressStore: ObservableObject {
     private let masteryEngine = MathMasteryEngine()
     // In-memory recent prompts cache to reduce repeats across sessions (per app run)
     private var recentPromptsBySkill: [String: Set<String>] = [:]
+    weak var achievementReporter: GameCenterAchievementReporting?
 
     init(viewContext: NSManagedObjectContext) {
         self.context = viewContext
@@ -61,6 +62,8 @@ final class ProgressStore: ObservableObject {
         progress.totalCorrectAnswers += Int32(results.filter { $0.isCorrect }.count)
         progress.lastExerciseDate = referenceDate
 
+        var newlyMasteredSkills = Set<MathSkill>()
+
         // Update recent prompts cache to reduce repeats in subsequent sessions within app lifetime
         for result in results {
             let key = result.problem.skill.id
@@ -72,7 +75,8 @@ final class ProgressStore: ObservableObject {
         for result in results {
             let skill = result.problem.skill
             let skillProgress = try skillProgress(for: skill, subject: subject)
-            let updated = masteryEngine.updatedProficiency(from: skillProgress.proficiency, correct: result.isCorrect, difficulty: result.problem.difficulty, streak: Int(skillProgress.streak))
+            let priorProficiency = skillProgress.proficiency
+            let updated = masteryEngine.updatedProficiency(from: priorProficiency, correct: result.isCorrect, difficulty: result.problem.difficulty, streak: Int(skillProgress.streak))
             skillProgress.proficiency = updated
             skillProgress.lastReviewed = referenceDate
             if result.isCorrect {
@@ -80,9 +84,21 @@ final class ProgressStore: ObservableObject {
             } else {
                 skillProgress.streak = 0
             }
+
+            if priorProficiency < MathSkill.masteryThreshold && updated >= MathSkill.masteryThreshold {
+                newlyMasteredSkills.insert(skill)
+            }
         }
 
         try context.save()
+
+        let report = GameSessionReport(
+            subject: subject,
+            totalSessions: Int(progress.totalSessions),
+            totalCorrectAnswers: Int(progress.totalCorrectAnswers),
+            newMasteredSkills: Array(newlyMasteredSkills)
+        )
+        achievementReporter?.recordSession(report: report)
     }
 
     func focusSkill(for subject: LearningSubject) -> MathSkill {

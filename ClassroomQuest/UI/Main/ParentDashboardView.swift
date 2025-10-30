@@ -1,9 +1,14 @@
 import SwiftUI
 internal import CoreData
+import GameKit
 
 
 struct ParentDashboardView: View {
     @ObservedObject var progressStore: ProgressStore
+    @EnvironmentObject private var gameCenterManager: GameCenterManager
+    @State private var showAchievements = false
+    @State private var showLeaderboard = false
+    @AppStorage("gameCenterAccessPointVisible") private var isAccessPointEnabled = false
 
     private var subjectProgress: SubjectProgress? {
         try? progressStore.subjectProgress(for: .math)
@@ -27,6 +32,7 @@ struct ParentDashboardView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
                 progressSection
+                gameCenterSection
                 starsSection
                 subscriptionSection
                 exportSection
@@ -34,6 +40,18 @@ struct ParentDashboardView: View {
             .padding(24)
         }
         .background(CQTheme.background.ignoresSafeArea())
+        .sheet(isPresented: $showAchievements) {
+            GameCenterDashboardView(viewState: .achievements)
+        }
+        .sheet(isPresented: $showLeaderboard) {
+            GameCenterDashboardView(viewState: .leaderboards)
+        }
+        .onAppear {
+            gameCenterManager.setAccessPointVisible(isAccessPointEnabled)
+        }
+        .onChange(of: isAccessPointEnabled) { newValue in
+            gameCenterManager.setAccessPointVisible(newValue)
+        }
     }
 
     private var header: some View {
@@ -77,6 +95,90 @@ struct ParentDashboardView: View {
                 infoTile(title: "Stars Earned", value: "⭐️ \(totalCorrect + streakCount * 12)", subtitle: "Lifetime total")
                 infoTile(title: "Current Streak", value: "🔥 \(max(streakCount, 1))", subtitle: "Days in a row")
             }
+        }
+    }
+
+    private var gameCenterSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Game Center")
+                .font(.cqBody1)
+                .foregroundStyle(CQTheme.textPrimary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(gameCenterStatusColor)
+                        .frame(width: 10, height: 10)
+                    Text(gameCenterStatusDescription)
+                        .font(.cqCaption)
+                        .foregroundStyle(CQTheme.textSecondary)
+                    Spacer()
+                    if case .failed = gameCenterManager.authenticationState {
+                        Button("Retry") {
+                            gameCenterManager.authenticate()
+                        }
+                        .font(.cqCaption)
+                    }
+                }
+
+                HStack(spacing: 12) {
+                    Button("View Achievements") {
+                        showAchievements = true
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!isGameCenterReady)
+
+                    Button("View Leaderboard") {
+                        showLeaderboard = true
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!isGameCenterReady)
+                }
+
+                Toggle("Show Game Center icon for kids", isOn: $isAccessPointEnabled)
+                    .font(.cqCaption)
+                    .tint(CQTheme.bluePrimary)
+                    .disabled(!isGameCenterReady)
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(CQTheme.cardBackground)
+                    .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 8)
+            )
+        }
+    }
+
+    private var isGameCenterReady: Bool {
+        if case .authenticated = gameCenterManager.authenticationState, GKLocalPlayer.local.isAuthenticated {
+            return true
+        }
+        return false
+    }
+
+    private var gameCenterStatusDescription: String {
+        switch gameCenterManager.authenticationState {
+        case .idle:
+            return "Sign in from your device settings to enable achievements."
+        case .authenticating:
+            return "Connecting to Game Center…"
+        case .authenticated:
+            return "Game Center connected. Achievements are tracking."
+        case .failed(let message):
+            return "Sign-in failed: \(message)"
+        }
+    }
+
+    private var gameCenterStatusColor: Color {
+        switch gameCenterManager.authenticationState {
+        case .authenticated:
+            return .green
+        case .authenticating:
+            return .yellow
+        case .failed:
+            return .red
+        case .idle:
+            return .gray
         }
     }
 
@@ -183,5 +285,8 @@ struct ParentDashboardView: View {
 #Preview {
     let controller = PersistenceController.preview
     let store = ProgressStore(viewContext: controller.container.viewContext)
+    let manager = GameCenterManager()
+    store.achievementReporter = manager
     return ParentDashboardView(progressStore: store)
+        .environmentObject(manager)
 }
