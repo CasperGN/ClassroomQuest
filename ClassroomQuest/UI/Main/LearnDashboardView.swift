@@ -92,19 +92,6 @@ struct LearnDashboardView: View {
                 }
 
                 Spacer(minLength: 12)
-
-                Button(action: onShowSettings) {
-                    Label("Parents", systemImage: "gearshape")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(CQTheme.bluePrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(CQTheme.cardBackground.opacity(0.9))
-                        .clipShape(Capsule())
-                        .shadow(color: CQTheme.bluePrimary.opacity(0.1), radius: 12, x: 0, y: 6)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Parent settings")
             }
 
             VStack(alignment: .leading, spacing: 8) {

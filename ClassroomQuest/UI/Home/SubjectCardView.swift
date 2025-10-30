@@ -10,8 +10,8 @@ struct SubjectCardView: View {
     @ScaledMetric(relativeTo: .title3) private var iconPadding: CGFloat = 10
     @ScaledMetric(relativeTo: .title3) private var ringSize: CGFloat = 52
     @ScaledMetric(relativeTo: .title2) private var cardWidth: CGFloat = 190
-    @ScaledMetric(relativeTo: .title2) private var cardHeight: CGFloat = 220
-    @ScaledMetric(relativeTo: .headline) private var actionHeight: CGFloat = 44
+    @ScaledMetric(relativeTo: .title2) private var cardHeight: CGFloat = 236
+    @ScaledMetric(relativeTo: .body) private var actionHeight: CGFloat = 42
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -33,10 +33,13 @@ struct SubjectCardView: View {
                 Text(progressSummary.focusSkillName)
                     .font(.cqBody2)
                     .foregroundStyle(CQTheme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Text(progressSummary.detailText)
                     .font(.cqCaption)
                     .foregroundStyle(CQTheme.textSecondary)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.85)
             }
 
             HStack(spacing: 2) {
@@ -60,6 +63,8 @@ struct SubjectCardView: View {
                     .font(.system(.headline, design: .rounded).weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: actionHeight)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .buttonStyle(.borderedProminent)
             .tint(subject.accentColor)
