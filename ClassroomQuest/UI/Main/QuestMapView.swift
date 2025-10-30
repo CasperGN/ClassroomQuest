@@ -70,7 +70,7 @@ struct QuestMapView: View {
             }
         }
         .stroke(style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round))
-        .fill(Color.white.opacity(0.5))
+        .fill(Color(.tertiarySystemFill))
         .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 6)
     }
 

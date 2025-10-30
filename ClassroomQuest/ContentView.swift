@@ -4,6 +4,7 @@ internal import CoreData
 struct ContentView: View {
     @EnvironmentObject private var progressStore: ProgressStore
     @EnvironmentObject private var purchaseManager: MockPurchaseManager
+    @EnvironmentObject private var gameCenterManager: GameCenterManager
     @State private var path: [ExerciseRoute] = []
     @State private var selectedTab: MainTab = .learn
     @State private var showParentalGate = false
@@ -131,6 +132,9 @@ struct ContentView: View {
             if storedPlacementGrade == nil {
                 showPlacementPrompt = true
             }
+        }
+        .task {
+            gameCenterManager.authenticate()
         }
     }
 

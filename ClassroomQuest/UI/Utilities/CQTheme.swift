@@ -6,10 +6,10 @@ enum CQTheme {
     static let greenSecondary = Color("CQGreenSecondary")
     static let purpleLanguage = Color("CQPurpleLang")
     static let goldReligious = Color("CQGoldReligious")
-    static let textPrimary = Color("CQTextPrimary")
-    static let textSecondary = Color("CQTextSecondary")
-    static let cardBackground = Color("CQCardBG")
-    static let background = Color("CQBackground")
+    static let textPrimary = Color(.label)
+    static let textSecondary = Color(.secondaryLabel)
+    static let cardBackground = Color(.secondarySystemBackground)
+    static let background = Color(.systemGroupedBackground)
 }
 
 extension Font {
