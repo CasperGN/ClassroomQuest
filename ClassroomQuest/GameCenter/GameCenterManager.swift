@@ -15,70 +15,42 @@ final class GameCenterManager: ObservableObject {
         case failed(String)
     }
 
+    struct Guidance: Equatable {
+        let message: String
+        let documentationURL: URL?
+    }
+
     @Published private(set) var authenticationState: AuthenticationState = .idle
-    @Published private(set) var isConfigurationValid = true
+    @Published private(set) var guidance: Guidance?
 
     private let logger = Logger(subsystem: "com.classroomquest.app", category: "GameCenter")
     private var pendingReports: [GameSessionReport] = []
     private var accessPointRequested = false
 
     func authenticate() {
-        guard isConfigurationValid else {
-            logger.debug("Skipping Game Center authentication because configuration is marked invalid.")
-            return
-        }
         guard authenticationState != .authenticating else { return }
 
         if GKLocalPlayer.local.isAuthenticated {
-            authenticationState = .authenticated
-            configureAccessPoint(isActive: true)
-            Task { [weak self] in
-                guard let self else { return }
-                await self.flushPendingReports()
-            }
+            finalizeAuthenticationSuccess()
             return
         }
 
         authenticationState = .authenticating
         configureAccessPoint(isActive: false)
 
-        GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
-            guard let self else { return }
+        guidance = nil
 
-            if let viewController {
-                self.presentAuthenticationViewController(viewController)
-                return
-            }
-
-            if let error {
-                if self.handleConfigurationErrorIfNeeded(error) {
-                    return
-                }
-
-                let message = self.userFacingMessage(for: error)
-                self.logger.error("Game Center authentication failed: \(message, privacy: .public)")
-                self.authenticationState = .failed(message)
-                self.configureAccessPoint(isActive: false)
-                return
-            }
-
-            guard GKLocalPlayer.local.isAuthenticated else {
-                self.authenticationState = .idle
-                self.configureAccessPoint(isActive: false)
-                return
-            }
-
-            self.authenticationState = .authenticated
-            self.configureAccessPoint(isActive: true)
+        if #available(iOS 17.0, *) {
             Task { [weak self] in
                 guard let self else { return }
-                await self.flushPendingReports()
+                await self.authenticateUsingAsyncAPI()
             }
+        } else {
+            authenticateUsingHandler()
         }
     }
 
     func recordSession(report: GameSessionReport) {
-        guard isConfigurationValid else { return }
         if case .authenticated = authenticationState, GKLocalPlayer.local.isAuthenticated {
             Task { await submit(report: report) }
         } else {
@@ -89,13 +61,7 @@ final class GameCenterManager: ObservableObject {
 
     func setAccessPointVisible(_ isVisible: Bool) {
         accessPointRequested = isVisible
-        guard isConfigurationValid else { return }
         configureAccessPoint(isActive: GKLocalPlayer.local.isAuthenticated)
-    }
-
-    func resetConfigurationValidation() {
-        isConfigurationValid = true
-        authenticate()
     }
 
     private func flushPendingReports() async {
@@ -140,27 +106,58 @@ final class GameCenterManager: ObservableObject {
         return achievements
     }
 
+
+    func retry() {
+        guidance = nil
+        authenticate()
+    }
+
+    @MainActor
     private func configureAccessPoint(isActive: Bool) {
         GKAccessPoint.shared.location = .topLeading
         GKAccessPoint.shared.isActive = isActive && accessPointRequested
     }
 
-    private func handleConfigurationErrorIfNeeded(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        guard nsError.domain == GKErrorDomain,
-              let code = GKError.Code(rawValue: nsError.code) else { return false }
+    @MainActor
+    private func finalizeAuthenticationSuccess() {
+        authenticationState = .authenticated
+        guidance = nil
+        configureAccessPoint(isActive: true)
+        Task { [weak self] in
+            guard let self else { return }
+            await self.flushPendingReports()
+        }
+    }
 
-        switch code {
-        case .gameUnrecognized:
-            logger.error("Game Center authentication failed because the bundle is not enabled on App Store Connect. Enable Game Center for this app before testing achievements.")
-            pendingReports.removeAll()
-            isConfigurationValid = false
-            let message = userFacingMessage(for: error)
-            authenticationState = .failed(message)
-            configureAccessPoint(isActive: false)
-            return true
-        default:
-            return false
+    @available(iOS 17.0, *)
+    private func authenticateUsingAsyncAPI() async {
+        do {
+            try await GKLocalPlayer.local.authenticateIfNeeded()
+            await finalizeAuthenticationSuccess()
+        } catch {
+            await handleAuthenticationFailure(error)
+        }
+    }
+
+    private func authenticateUsingHandler() {
+        GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
+            guard let self else { return }
+
+            if let viewController {
+                self.presentAuthenticationViewController(viewController)
+                return
+            }
+
+            Task { @MainActor in
+                if let error {
+                    await self.handleAuthenticationFailure(error)
+                } else if GKLocalPlayer.local.isAuthenticated {
+                    self.finalizeAuthenticationSuccess()
+                } else {
+                    self.authenticationState = .idle
+                    self.configureAccessPoint(isActive: false)
+                }
+            }
         }
     }
 
@@ -199,6 +196,37 @@ final class GameCenterManager: ObservableObject {
         return root
     }
 #endif
+
+    @MainActor
+    private func handleAuthenticationFailure(_ error: Error) async {
+        let message = userFacingMessage(for: error)
+        logger.error("Game Center authentication failed: \(message, privacy: .public)")
+        authenticationState = .failed(message)
+        configureAccessPoint(isActive: false)
+
+        let nsError = error as NSError
+        if nsError.domain == GKErrorDomain, let code = GKError.Code(rawValue: nsError.code) {
+            switch code {
+            case .gameUnrecognized:
+                guidance = Guidance(
+                    message: String(localized: "Enable Game Center for this bundle in App Store Connect, then try again.", comment: "Guidance shown when the bundle is not enabled for Game Center."),
+                    documentationURL: URL(string: "https://developer.apple.com/help/app-store-connect/configure-game-center/enable-an-app-version-for-game-center")
+                )
+            case .notAuthenticated:
+                guidance = Guidance(
+                    message: String(localized: "Sign in with a Sandbox Tester account under Settings › Game Center before testing achievements.", comment: "Guidance shown when the player must sign in."),
+                    documentationURL: URL(string: "https://developer.apple.com/help/app-store-connect/test-in-app-purchases-in-the-sandbox/environment-setup#test-game-center")
+                )
+            case .notAuthorized, .underage:
+                guidance = Guidance(
+                    message: String(localized: "Screen Time or parental controls are preventing Game Center access on this device.", comment: "Guidance shown when the device is restricted."),
+                    documentationURL: URL(string: "https://support.apple.com/en-us/HT201304")
+                )
+            default:
+                break
+            }
+        }
+    }
 
     private func userFacingMessage(for error: Error) -> String {
         let nsError = error as NSError

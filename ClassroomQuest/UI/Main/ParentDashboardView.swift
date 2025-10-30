@@ -113,16 +113,9 @@ struct ParentDashboardView: View {
                         .font(.cqCaption)
                         .foregroundStyle(CQTheme.textSecondary)
                     Spacer()
-                    if gameCenterManager.isConfigurationValid {
-                        if case .failed = gameCenterManager.authenticationState {
-                            Button("Retry") {
-                                gameCenterManager.authenticate()
-                            }
-                            .font(.cqCaption)
-                        }
-                    } else {
-                        Button("Check Again") {
-                            gameCenterManager.resetConfigurationValidation()
+                    if case .failed = gameCenterManager.authenticationState {
+                        Button("Retry") {
+                            gameCenterManager.retry()
                         }
                         .font(.cqCaption)
                     }
@@ -145,12 +138,19 @@ struct ParentDashboardView: View {
                 Toggle("Show Game Center icon for kids", isOn: $isAccessPointEnabled)
                     .font(.cqCaption)
                     .tint(CQTheme.bluePrimary)
-                    .disabled(!isGameCenterReady || !gameCenterManager.isConfigurationValid)
+                    .disabled(!isGameCenterReady)
 
-                if !gameCenterManager.isConfigurationValid {
-                    Text("Enable Game Center for this bundle in App Store Connect, then tap \"Check Again\" to retry authentication.")
-                        .font(.cqCaption)
-                        .foregroundStyle(CQTheme.textSecondary)
+                if let guidance = gameCenterManager.guidance {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(guidance.message)
+                            .font(.cqCaption)
+                            .foregroundStyle(CQTheme.textSecondary)
+                        if let url = guidance.documentationURL {
+                            Link("View setup instructions", destination: url)
+                                .font(.cqCaption)
+                                .foregroundStyle(CQTheme.bluePrimary)
+                        }
+                    }
                 }
             }
             .padding(20)
