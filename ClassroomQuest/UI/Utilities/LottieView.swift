@@ -16,12 +16,20 @@ struct LottieView: UIViewRepresentable {
         let containerView = UIView(frame: .zero)
         containerView.backgroundColor = .clear
 
-        let animationView = LottieAnimationView(name: animationName)
+        let animationView = LottieAnimationView()
         animationView.translatesAutoresizingMaskIntoConstraints = false
         animationView.backgroundColor = .clear
         animationView.loopMode = loopMode
         animationView.contentMode = .scaleAspectFill
         animationView.backgroundBehavior = .pauseAndRestore
+
+        if let animation = LottieAnimation.named(
+            animationName,
+            bundle: .main,
+            subdirectory: "LottieAnimations"
+        ) {
+            animationView.animation = animation
+        }
 
         containerView.addSubview(animationView)
         NSLayoutConstraint.activate([

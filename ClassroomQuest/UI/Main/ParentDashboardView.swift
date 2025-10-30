@@ -49,7 +49,7 @@ struct ParentDashboardView: View {
         .onAppear {
             gameCenterManager.setAccessPointVisible(isAccessPointEnabled)
         }
-        .onChange(of: isAccessPointEnabled) { newValue in
+        .onChange(of: isAccessPointEnabled) { _, newValue in
             gameCenterManager.setAccessPointVisible(newValue)
         }
     }
