@@ -6,6 +6,7 @@ struct ClassroomQuestApp: App {
     let persistenceController = PersistenceController.shared
     @StateObject private var progressStore: ProgressStore
     @StateObject private var purchaseManager: MockPurchaseManager
+    @StateObject private var curriculumStore = CurriculumProgressStore()
     @StateObject private var gameCenterManager: GameCenterManager
     @State private var hasFinishedSplash = false
 
@@ -41,6 +42,7 @@ struct ClassroomQuestApp: App {
             .environmentObject(progressStore)
             .environmentObject(purchaseManager)
             .environmentObject(gameCenterManager)
+            .environmentObject(curriculumStore)
         }
     }
 }

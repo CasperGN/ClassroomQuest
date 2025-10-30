@@ -269,5 +269,6 @@ struct ContentView: View {
     ContentView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .environmentObject(ProgressStore(viewContext: PersistenceController.preview.container.viewContext))
+        .environmentObject(CurriculumProgressStore())
 }
 

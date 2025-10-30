@@ -1,953 +1,57 @@
 import Foundation
 import SwiftUI
 
-struct CurriculumCourse: Identifiable {
-    let grade: CurriculumGrade
-    let overview: String
-    let guidingTheme: String
-    let tracks: [CurriculumTrack]
-
-    var id: CurriculumGrade { grade }
-
-    static let catalog: [CurriculumCourse] = [
-        .init(
-            grade: .preK,
-            overview: "Playful discovery with quick-win activities that build confidence in counting, letters, science observation, and kindness.",
-            guidingTheme: "Wonder Garden Explorers",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Help the Meadow Sprites gather treasures by counting and matching shapes.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Apple Basket Count",
-                            topic: "Counting 1–10",
-                            gameMechanics: ["Drag-and-drop apples into baskets", "Cheerful audio feedback after each drop"],
-                            swiftUITechniques: ["Use DragGesture with drop targets to count items", "Trigger withAnimation star bursts and haptics"],
-                            reward: "Earn a sticker for the sprite's scrapbook"
-                        ),
-                        CurriculumQuest(
-                            title: "Shape Safari",
-                            topic: "Shapes & Patterns",
-                            gameMechanics: ["Tap shapes hidden in the scene", "Complete simple repeating patterns"],
-                            swiftUITechniques: ["Present shapes in LazyVGrid with tappable cells", "Animate discoveries with matchedGeometryEffect"],
-                            reward: "Unlock a new explorer hat for the avatar"
-                        ),
-                        CurriculumQuest(
-                            title: "Tiny Comparison Trail",
-                            topic: "Compare Groups",
-                            gameMechanics: ["Choose which group has more critters", "Immediate encouragement for each choice"],
-                            swiftUITechniques: ["Randomize prompts locally", "Use ProgressView for short streak indicator"],
-                            reward: "Collect firefly lights that brighten the map"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Feed the Phonics Monster and paint letters to unlock the alphabet song.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Letter Painting",
-                            topic: "Letter Recognition",
-                            gameMechanics: ["Trace uppercase letters with finger", "Voiceover pronunciation on tap"],
-                            swiftUITechniques: ["Render letter outlines with Canvas", "Read letters using AVSpeechSynthesizer"],
-                            reward: "Add glitter brushes to the painting palette"
-                        ),
-                        CurriculumQuest(
-                            title: "Phonics Picnic",
-                            topic: "Beginning Sounds",
-                            gameMechanics: ["Drag items that match a sound into a friendly monster's basket"],
-                            swiftUITechniques: ["Use .onDrag and .onDrop to classify images", "Play success chimes with AVAudioPlayer"],
-                            reward: "Unlock a new picnic blanket pattern"
-                        ),
-                        CurriculumQuest(
-                            title: "Alphabet Parade",
-                            topic: "Letter Sequencing",
-                            gameMechanics: ["Arrange floating balloons into ABC order", "Short celebration for completion"],
-                            swiftUITechniques: ["Animate balloons with spring effects", "Persist completion in Core Data for the parent report"],
-                            reward: "Earn parade badges displayed in the sticker book"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Visit the Wonder Garden and identify senses, animals, and weather.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Sense Detective",
-                            topic: "Five Senses",
-                            gameMechanics: ["Tap objects to match sense icons", "Reveal fun sound/voice clips"],
-                            swiftUITechniques: ["Display scenes with layered ZStack", "Trigger AVSpeechSynthesizer narration per discovery"],
-                            reward: "Grow a sensory flower in the kid's garden"
-                        ),
-                        CurriculumQuest(
-                            title: "Animal Sound Hunt",
-                            topic: "Animals & Habitats",
-                            gameMechanics: ["Guess animals from their sounds", "Simple quiz after free exploration"],
-                            swiftUITechniques: ["Bundle audio clips for offline playback", "Show randomized prompts using shuffled arrays"],
-                            reward: "Collect habitat cards for the field journal"
-                        ),
-                        CurriculumQuest(
-                            title: "Weather Wheel",
-                            topic: "Weather Basics",
-                            gameMechanics: ["Spin a weather wheel and dress a character appropriately"],
-                            swiftUITechniques: ["Animate rotation with rotationEffect", "Store outfit choices in Core Data as artifacts"],
-                            reward: "Unlock a rainbow trail animation on the map"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Guide gentle creatures to make kind choices around the Wonder Garden chapel.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Sharing Seeds",
-                            topic: "Sharing & Kindness",
-                            gameMechanics: ["Choose kind actions in short vignettes", "Receive immediate hugs and hearts"],
-                            swiftUITechniques: ["Present branching options with Buttons inside a TabView story", "Animate heart icons using withAnimation"],
-                            reward: "Earn kindness gems that unlock lullaby music"
-                        ),
-                        CurriculumQuest(
-                            title: "Color the Symbols",
-                            topic: "Faith & Community Symbols",
-                            gameMechanics: ["Finger-paint symbols like crosses or doves"],
-                            swiftUITechniques: ["Implement DrawingCanvas for finger painting", "Persist artwork to Core Data for parent gallery"],
-                            reward: "Add the colored symbol to the chapel stained glass"
-                        ),
-                        CurriculumQuest(
-                            title: "Feelings Garden",
-                            topic: "Emotions Vocabulary",
-                            gameMechanics: ["Match emotions to friendly creatures", "Breathing mini-break after each set"],
-                            swiftUITechniques: ["Use Lottie or Particle effects to calm the scene", "Schedule breathing timer with TimelineView"],
-                            reward: "Unlock a new calming background for bedtime mode"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .kindergarten,
-            overview: "Story-driven quests introduce structured practice with manipulatives, sight words, and nature missions.",
-            guidingTheme: "Neighborhood Quest Buddies",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Join Builder Bot to stack number blocks and solve early addition puzzles.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Number Block Adventure",
-                            topic: "Counting to 20",
-                            gameMechanics: ["Stack draggable blocks to reach target numbers", "Celebrate streaks with glow effects"],
-                            swiftUITechniques: ["Create draggable manipulatives with ForEach", "Animate streak badge via ProgressView"],
-                            reward: "Unlock blueprint pieces for Builder Bot's workshop"
-                        ),
-                        CurriculumQuest(
-                            title: "Snack Shop Sums",
-                            topic: "Intro Addition & Subtraction",
-                            gameMechanics: ["Serve snacks by solving addition/subtraction stories"],
-                            swiftUITechniques: ["Use card-style prompts in LazyVStack", "Persist mastery per operation in Core Data"],
-                            reward: "Earn recipe cards for the snack stand"
-                        ),
-                        CurriculumQuest(
-                            title: "Measure Trail",
-                            topic: "Non-standard Measurement",
-                            gameMechanics: ["Drag shoes or blocks to measure playground objects"],
-                            swiftUITechniques: ["Detect placements with GeometryReader", "Snap pieces into place using withAnimation"],
-                            reward: "Collect explorer badges on the quest map"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Form sight words, rhyme with forest critters, and build tiny stories.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Sight Word Garden",
-                            topic: "Sight Words",
-                            gameMechanics: ["Tap glowing word flowers to hear and read", "Match word cards to pictures"],
-                            swiftUITechniques: ["Highlight text with background modifiers", "Use AVSpeechSynthesizer to speak words"],
-                            reward: "Grow animated butterflies around the reading nook"
-                        ),
-                        CurriculumQuest(
-                            title: "Rhyme River",
-                            topic: "Rhyming",
-                            gameMechanics: ["Row a boat by pairing rhyming words", "Timed gentle races"],
-                            swiftUITechniques: ["Drive timers with TimelineView", "Animate boat using offset transitions"],
-                            reward: "Unlock new oars and boat colors"
-                        ),
-                        CurriculumQuest(
-                            title: "Story Stones",
-                            topic: "Simple Sentences",
-                            gameMechanics: ["Arrange story stones (subject, verb, object) to tell mini tales"],
-                            swiftUITechniques: ["Support drag reordering with DropDelegate", "Store stories in Core Data for replay"],
-                            reward: "Collect storybook covers for the shelf"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Collect weather data and care for classroom plants.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Weather Station",
-                            topic: "Weather & Seasons",
-                            gameMechanics: ["Record weather observations", "Dress avatars for conditions"],
-                            swiftUITechniques: ["Use Toggle & Picker controls for logs", "Animate backgrounds per weather state"],
-                            reward: "Unlock a forecast widget on the home screen"
-                        ),
-                        CurriculumQuest(
-                            title: "Habitat Builder",
-                            topic: "Animal Habitats",
-                            gameMechanics: ["Place animals into matching habitats", "Earn collection cards"],
-                            swiftUITechniques: ["Use LazyVGrid palettes with DropDelegate", "Animate habitat completion with scale effects"],
-                            reward: "Add habitat diorama pieces to the classroom"
-                        ),
-                        CurriculumQuest(
-                            title: "Plant Patrol",
-                            topic: "Plant Needs",
-                            gameMechanics: ["Adjust sunlight and water sliders", "Watch plant growth animation"],
-                            swiftUITechniques: ["Bind sliders to stateful growth model", "Animate growth with TimelineView"],
-                            reward: "Unlock new seeds for the science corner"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Meet community helpers and practice empathy through role-play.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Helper HQ",
-                            topic: "Community Helpers",
-                            gameMechanics: ["Choose helper tools for different jobs", "Branching scenarios"],
-                            swiftUITechniques: ["Use NavigationStack for narrative flow", "Record decisions to Core Data for parent recap"],
-                            reward: "Unlock helper badges and costume pieces"
-                        ),
-                        CurriculumQuest(
-                            title: "Family Tree Time",
-                            topic: "Family Roles",
-                            gameMechanics: ["Assemble animated family trees", "Record thank-you notes"],
-                            swiftUITechniques: ["Implement DragGesture connectors", "Allow parent-recorded encouragement using AVAudioRecorder"],
-                            reward: "Add portraits to the in-app clubhouse"
-                        ),
-                        CurriculumQuest(
-                            title: "Neighborhood Map",
-                            topic: "Basic Geography",
-                            gameMechanics: ["Puzzle together map tiles to rebuild the neighborhood"],
-                            swiftUITechniques: ["Snap tiles with matchedGeometryEffect", "Use MapKit snapshots for context"],
-                            reward: "Reveal hidden playground locations on the main map"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade1,
-            overview: "Chapter-based missions combine math boss battles, early comprehension, and civic adventures.",
-            guidingTheme: "Clockwork Town Guardians",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Repair Clockwork Town by mastering mixed operations and telling time.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Gear Up Addition",
-                            topic: "Addition/Subtraction to 20",
-                            gameMechanics: ["Complete timed gears by solving equations", "Boss fight mixes operation types"],
-                            swiftUITechniques: ["Drive timers with TimelineView", "Store boss levels as GameLevel entities"],
-                            reward: "Unlock gear motifs for the avatar"
-                        ),
-                        CurriculumQuest(
-                            title: "Place Value Workshop",
-                            topic: "Tens and Ones",
-                            gameMechanics: ["Drag rods and units to build numbers", "Earn upgrade parts"],
-                            swiftUITechniques: ["Represent rods with GeometryReader-based stacks", "Use haptic feedback on correct placements"],
-                            reward: "Add new workshop tools to the HQ"
-                        ),
-                        CurriculumQuest(
-                            title: "Time Keeper Trials",
-                            topic: "Time to Hour & Half Hour",
-                            gameMechanics: ["Set analog clocks for townsfolk tasks", "Unlock story cutscenes"],
-                            swiftUITechniques: ["Wheel pickers for hour/minute hands", "SpriteKit scene for cinematic reveals"],
-                            reward: "Activate new areas in Clockwork Town"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Guide storybook heroes through comprehension checkpoints and grammar puzzles.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Chapter Checkpoint",
-                            topic: "Reading Comprehension",
-                            gameMechanics: ["Read short passages then answer branching questions"],
-                            swiftUITechniques: ["Highlight text as audio plays", "Use List of MultipleChoiceQuestion views"],
-                            reward: "Collect illustration cards for the library"
-                        ),
-                        CurriculumQuest(
-                            title: "Grammar Garden",
-                            topic: "Nouns & Verbs",
-                            gameMechanics: ["Sort words into glowing plots", "Unlock secret sentences"],
-                            swiftUITechniques: ["Use DropDelegate for category sorting", "Animate successful matches with scale effects"],
-                            reward: "Grow grammar flowers that decorate the home hub"
-                        ),
-                        CurriculumQuest(
-                            title: "Story Forge",
-                            topic: "Sentence Building",
-                            gameMechanics: ["Craft sentences from word tiles", "Add to hero's journal"],
-                            swiftUITechniques: ["Implement tile drag grid", "Persist journal entries to Core Data"],
-                            reward: "Unlock hero emotes for story playback"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Discover life cycles and states of matter in interactive labs.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Lifecycle Lab",
-                            topic: "Animal & Plant Cycles",
-                            gameMechanics: ["Arrange stages on a timeline", "Unlock animations"],
-                            swiftUITechniques: ["TimelineView to animate progress", "Trigger animations with matchedGeometryEffect"],
-                            reward: "Collect holographic life cycle cards"
-                        ),
-                        CurriculumQuest(
-                            title: "Matter Mixer",
-                            topic: "States of Matter",
-                            gameMechanics: ["Heat or cool water particles to observe changes"],
-                            swiftUITechniques: ["SpriteKit particle scene for states", "Control temperature with Slider bound to simulation"],
-                            reward: "Unlock lab equipment skins"
-                        ),
-                        CurriculumQuest(
-                            title: "Super Sense Review",
-                            topic: "Human Senses",
-                            gameMechanics: ["Match senses to activities in quick rounds"],
-                            swiftUITechniques: ["Use cards with flipping animations", "Track accuracy streaks with Combine publishers"],
-                            reward: "Earn lab assistant companion"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Help citizens rebuild their community park through civic choices.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Town Treasure Hunt",
-                            topic: "Local History",
-                            gameMechanics: ["Solve clues around a map", "Collect artifacts"],
-                            swiftUITechniques: ["Overlay MapKit snapshot with tappable markers", "Persist found artifacts in Core Data"],
-                            reward: "Display artifacts in the community museum"
-                        ),
-                        CurriculumQuest(
-                            title: "Civic Helpers",
-                            topic: "Basic Civics",
-                            gameMechanics: ["Allocate resources to community needs", "Cause-and-effect feedback"],
-                            swiftUITechniques: ["Use Sliders and Charts to show resource impact", "Record decisions for parent dashboard insights"],
-                            reward: "Earn town improvement badges"
-                        ),
-                        CurriculumQuest(
-                            title: "Kind Choice Corners",
-                            topic: "Social Problem Solving",
-                            gameMechanics: ["Choose responses in peer scenarios", "Reflect with journaling prompts"],
-                            swiftUITechniques: ["Present choices as Buttons with recorded outcomes", "Offer optional audio journal via AVAudioRecorder"],
-                            reward: "Unlock park decorations chosen by the learner"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade2,
-            overview: "Cooperative quests, weather labs, and storytelling decks deepen critical thinking and creativity.",
-            guidingTheme: "Skyship Expedition",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Upgrade the expedition airship using double-digit operations and budding multiplication.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Sky Dock Sums",
-                            topic: "Add/Subtract to 100",
-                            gameMechanics: ["Repair ship parts by solving column problems", "Combo meter for consecutive wins"],
-                            swiftUITechniques: ["Display column alignment with custom Grid", "Animate combo meter using Combine timers"],
-                            reward: "Unlock new ship sails and decals"
-                        ),
-                        CurriculumQuest(
-                            title: "Cargo Crew",
-                            topic: "Intro Multiplication",
-                            gameMechanics: ["Load crates in equal groups", "AI companion offers hints"],
-                            swiftUITechniques: ["Represent arrays with LazyVGrid", "Surface hints triggered by low mastery"],
-                            reward: "Adopt a helpful robo-parrot companion"
-                        ),
-                        CurriculumQuest(
-                            title: "Time Trader",
-                            topic: "Time to 5 Minutes & Money",
-                            gameMechanics: ["Run a trading post with clocks and coin change challenges"],
-                            swiftUITechniques: ["Use TimelineView for countdown challenges", "Drag coins with matchedGeometryEffect transitions"],
-                            reward: "Unlock merchant costumes and stall upgrades"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Collect story sparks to compose multi-sentence adventures.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Story Forge Deck",
-                            topic: "Paragraph Sequencing",
-                            gameMechanics: ["Arrange story cards into beginning, middle, end"],
-                            swiftUITechniques: ["Stack cards using ZStack with drag gestures", "Persist favorite sequences for reuse"],
-                            reward: "Unlock new illustration packs"
-                        ),
-                        CurriculumQuest(
-                            title: "Wordsmith Workshop",
-                            topic: "Adjectives & Descriptions",
-                            gameMechanics: ["Spin adjective wheels to enhance sentences", "Score style points"],
-                            swiftUITechniques: ["Use Picker with wheel style", "Scoreboard animated via withAnimation"],
-                            reward: "Earn design patterns for the writing journal"
-                        ),
-                        CurriculumQuest(
-                            title: "Creative Captains",
-                            topic: "Writing Basics",
-                            gameMechanics: ["Respond to prompts with text or voice", "NPC feedback badges"],
-                            swiftUITechniques: ["Use TextEditor with autosave", "Offer optional SpeechRecognizer dictation offline"],
-                            reward: "Unlock cabin décor themed to stories"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Chart weather patterns and engineer balanced habitats on distant islands.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Weather Lab",
-                            topic: "Weather Patterns",
-                            gameMechanics: ["Record temperatures and precipitation over multiple days"],
-                            swiftUITechniques: ["Plot data using Swift Charts", "Schedule review prompts with UNUserNotificationCenter"],
-                            reward: "Unlock forecast instruments for the airship"
-                        ),
-                        CurriculumQuest(
-                            title: "Habitat Sandbox",
-                            topic: "Ecosystem Balance",
-                            gameMechanics: ["Place flora and fauna with resource limits", "Maintain health meter"],
-                            swiftUITechniques: ["Use DropDelegate for placement", "Animate health meter with gradient ProgressView"],
-                            reward: "Adopt new animal buddies for the ship"
-                        ),
-                        CurriculumQuest(
-                            title: "Experiment Log",
-                            topic: "Scientific Method Basics",
-                            gameMechanics: ["Run simple experiments with variable toggles", "Record observations"],
-                            swiftUITechniques: ["Bind toggles to state machine", "Store notes and photos in Core Data attachments"],
-                            reward: "Earn scientist patches on the expedition jacket"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Celebrate cultures discovered on each island and practice thoughtful choices.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Culture Exchange",
-                            topic: "World Cultures",
-                            gameMechanics: ["Collect artifacts by answering cultural trivia", "Unlock festival scenes"],
-                            swiftUITechniques: ["Display collections with LazyHGrid", "Animate festival reveal with transitions"],
-                            reward: "Add cultural decor to the skyship commons"
-                        ),
-                        CurriculumQuest(
-                            title: "Map Makers",
-                            topic: "Mapping Skills",
-                            gameMechanics: ["Plot routes between islands", "Estimate distances"],
-                            swiftUITechniques: ["Overlay MapKit polylines", "Compute distances locally with MKMapPoint"],
-                            reward: "Unlock navigation compass skins"
-                        ),
-                        CurriculumQuest(
-                            title: "Decision Deck",
-                            topic: "Community Choices",
-                            gameMechanics: ["Play cards to resolve dilemmas", "See immediate narrative consequences"],
-                            swiftUITechniques: ["Model branching outcomes with state machine", "Store decision history for parent insights"],
-                            reward: "Earn leadership badges for the captain's log"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade3,
-            overview: "Challenge mode unlocks dungeon crawls, fraction crafting, and civic decision trees with optional leaderboards.",
-            guidingTheme: "Mystic Forest Guild",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Delve into the Mystic Forest to defeat math guardians using multiplication, division, and fractions.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Multiplication Gauntlet",
-                            topic: "Multiplication Facts",
-                            gameMechanics: ["Battle guardians with quick-fire facts", "Combo streak unlocks power moves"],
-                            swiftUITechniques: ["Embed SpriteKit battle scene", "Sync combos via Combine publisher"],
-                            reward: "Unlock enchanted weapons for avatars"
-                        ),
-                        CurriculumQuest(
-                            title: "Fraction Forge",
-                            topic: "Fraction Modeling",
-                            gameMechanics: ["Cut shapes to craft fractions", "Assemble fraction recipes"],
-                            swiftUITechniques: ["Use Canvas for slicing interactions", "Store creations as images for review"],
-                            reward: "Collect luminous fraction crystals"
-                        ),
-                        CurriculumQuest(
-                            title: "Area & Perimeter Patrol",
-                            topic: "Geometry Basics",
-                            gameMechanics: ["Scout forest clearings by calculating area/perimeter"],
-                            swiftUITechniques: ["Grid overlays with GeometryReader", "Hint system tied to mastery engine"],
-                            reward: "Expand guild treehouse rooms"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Investigate mysteries by synthesizing passages, vocabulary, and figurative language.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Mystery Files",
-                            topic: "Reading Comprehension",
-                            gameMechanics: ["Collect clues after reading case files", "Inference challenges"],
-                            swiftUITechniques: ["Use NavigationSplitView for case board", "Tag evidence with swipe actions"],
-                            reward: "Unlock detective gadgets for avatars"
-                        ),
-                        CurriculumQuest(
-                            title: "Word Wizard Arena",
-                            topic: "Vocabulary & Prefixes",
-                            gameMechanics: ["Cast spells by matching roots and prefixes"],
-                            swiftUITechniques: ["Animate spells with Particle effects", "Track mastery tiers in Core Data"],
-                            reward: "Earn spell animations for the quest map"
-                        ),
-                        CurriculumQuest(
-                            title: "Poetry Grove",
-                            topic: "Figurative Language",
-                            gameMechanics: ["Identify similes/metaphors", "Compose short poem cards"],
-                            swiftUITechniques: ["Provide prompt templates with TextEditor", "Render poems on collectible cards"],
-                            reward: "Grow glowing poetry vines in the grove"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Study energy, life cycles, and Earth changes through interactive quests.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Ecosystem Watch",
-                            topic: "Ecosystems",
-                            gameMechanics: ["Balance predator/prey counts", "Weekly check-ins"],
-                            swiftUITechniques: ["Persist data with Core Data schedules", "Use Charts to show population trends"],
-                            reward: "Unlock new biomes within the forest"
-                        ),
-                        CurriculumQuest(
-                            title: "Energy Lab",
-                            topic: "Energy Transfer",
-                            gameMechanics: ["Simulate light/heat experiments", "Visualize transformations"],
-                            swiftUITechniques: ["Use TimelineView to animate energy flow", "Add overlays explaining results"],
-                            reward: "Earn energy totems powering the guild hall"
-                        ),
-                        CurriculumQuest(
-                            title: "Rock Cycle Run",
-                            topic: "Rock Cycle",
-                            gameMechanics: ["Guide rocks through melting, cooling, weathering"],
-                            swiftUITechniques: ["Animate cycle timeline with Stepper", "Store milestone screenshots for parent review"],
-                            reward: "Collect rock badges for the geology wing"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Lead the guild council through historical dilemmas and map expeditions.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Branches of Government",
-                            topic: "Civics",
-                            gameMechanics: ["Build government tree and assign roles"],
-                            swiftUITechniques: ["Render tree structure with custom view", "Animate node highlights on selection"],
-                            reward: "Unlock council chamber upgrades"
-                        ),
-                        CurriculumQuest(
-                            title: "History Chronicles",
-                            topic: "National History",
-                            gameMechanics: ["Interactive timelines with key events", "Choice-driven reflections"],
-                            swiftUITechniques: ["Horizontal ScrollView timeline", "Store reflection responses in Core Data"],
-                            reward: "Add pages to the guild chronicle book"
-                        ),
-                        CurriculumQuest(
-                            title: "Explorer Maps",
-                            topic: "Advanced Map Skills",
-                            gameMechanics: ["Plan expeditions using scale and coordinates"],
-                            swiftUITechniques: ["Overlay coordinates on MapKit", "Offer measurement tools with gestures"],
-                            reward: "Reveal hidden forest shrines"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade4,
-            overview: "Learners tackle multi-step operations, literary analysis, and government simulations with increased autonomy.",
-            guidingTheme: "Innovation Harbor",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Restore Innovation Harbor's power grid using long operations and advanced fractions.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Power Grid Puzzles",
-                            topic: "Multi-digit Operations",
-                            gameMechanics: ["Route energy by solving long addition/subtraction"],
-                            swiftUITechniques: ["Support long-form input with column aligned text fields", "Provide contextual hints after errors"],
-                            reward: "Unlock harbor district upgrades"
-                        ),
-                        CurriculumQuest(
-                            title: "Fraction Marketplace",
-                            topic: "Equivalent & Comparing Fractions",
-                            gameMechanics: ["Trade resources by matching equivalent fractions", "Competitive challenges"],
-                            swiftUITechniques: ["Use Charts to visualize fraction bars", "Enable optional GameKit leaderboard"],
-                            reward: "Gain merchant alliance perks"
-                        ),
-                        CurriculumQuest(
-                            title: "Engineer Bay",
-                            topic: "Multi-digit Multiplication & Division",
-                            gameMechanics: ["Manufacture parts using multiplication/division chains"],
-                            swiftUITechniques: ["Chain questions via state machine", "Persist multi-step progress for resume"],
-                            reward: "Unlock engineering drone companions"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Run an investigative newsroom analyzing novels and grammar intricacies.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Novel Newsroom",
-                            topic: "Literary Analysis",
-                            gameMechanics: ["Collect textual evidence for story reports"],
-                            swiftUITechniques: ["Use split view for text + notes", "Tag evidence chips with swipe actions"],
-                            reward: "Unlock newsroom equipment skins"
-                        ),
-                        CurriculumQuest(
-                            title: "Grammar Workshop",
-                            topic: "Advanced Grammar",
-                            gameMechanics: ["Repair sentences using drag-and-drop grammar tiles"],
-                            swiftUITechniques: ["Reusable drag tile components", "Provide inline feedback with attributed strings"],
-                            reward: "Earn editor badges"
-                        ),
-                        CurriculumQuest(
-                            title: "Media Lab",
-                            topic: "Media Literacy",
-                            gameMechanics: ["Critique multimedia messages", "Tag persuasive techniques"],
-                            swiftUITechniques: ["Local AVPlayer for video", "Overlay annotation tools with shapes"],
-                            reward: "Unlock media studio backgrounds"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Operate harbor labs exploring energy, Earth systems, and engineering.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Energy Transfer Lab",
-                            topic: "Energy & Waves",
-                            gameMechanics: ["Tune wave generators to match target patterns"],
-                            swiftUITechniques: ["Plot waveforms with Canvas", "Provide slider-based control and live feedback"],
-                            reward: "Upgrade lab reactors"
-                        ),
-                        CurriculumQuest(
-                            title: "Earth Systems Mission",
-                            topic: "Earth Processes",
-                            gameMechanics: ["Simulate erosion and deposition", "Compare outcomes"],
-                            swiftUITechniques: ["SceneKit terrain manipulation", "Record before/after snapshots"],
-                            reward: "Unlock exploration submarines"
-                        ),
-                        CurriculumQuest(
-                            title: "Engineering Challenges",
-                            topic: "Simple Machines",
-                            gameMechanics: ["Build simple machines to solve tasks"],
-                            swiftUITechniques: ["Use physics-based SpriteKit scenes", "Track efficiency metrics in Core Data"],
-                            reward: "Earn innovation trophies"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Engage in government simulations and ethical debates for the harbor council.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Harbor Council",
-                            topic: "Government Branches",
-                            gameMechanics: ["Assign branch powers in scenario cards"],
-                            swiftUITechniques: ["Represent branches with interactive diagrams", "Log outcomes for parent dashboard"],
-                            reward: "Unlock council chamber seating and insignias"
-                        ),
-                        CurriculumQuest(
-                            title: "Economy Simulator",
-                            topic: "Economics Basics",
-                            gameMechanics: ["Manage supply/demand to keep harbor thriving"],
-                            swiftUITechniques: ["Charts to show supply curves", "Inventory management UI with List"],
-                            reward: "Gain trade route boosts"
-                        ),
-                        CurriculumQuest(
-                            title: "Ethics Forum",
-                            topic: "Ethical Decision Making",
-                            gameMechanics: ["Debate choices with NPC peers", "Reflect on consequences"],
-                            swiftUITechniques: ["Dialog trees with state machine", "Store reflections as markdown notes"],
-                            reward: "Earn peacemaker laurels"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade5,
-            overview: "Expedition quests combine rich data analysis, advanced writing, and immersive science missions.",
-            guidingTheme: "Frontier Research Alliance",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Lead research expeditions solving fraction operations, decimals, and volume puzzles.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Fraction Expedition",
-                            topic: "Fraction Operations",
-                            gameMechanics: ["Navigate routes by solving fraction puzzles"],
-                            swiftUITechniques: ["Fraction bars with GeometryReader", "Chain multi-step prompts with narrative"],
-                            reward: "Unlock expedition gear skins"
-                        ),
-                        CurriculumQuest(
-                            title: "Decimal Data Lab",
-                            topic: "Decimals & Graphing",
-                            gameMechanics: ["Collect samples and plot decimal data"],
-                            swiftUITechniques: ["Swift Charts scatter/line plots", "Export summary to PDF"],
-                            reward: "Add scientific instruments to the base"
-                        ),
-                        CurriculumQuest(
-                            title: "Volume Vault",
-                            topic: "Volume & 3D Shapes",
-                            gameMechanics: ["Construct 3D shapes to store artifacts"],
-                            swiftUITechniques: ["SceneKit manipulation gestures", "Persist designs for parent review"],
-                            reward: "Unlock holographic display cases"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Investigate historical mysteries with research skills and persuasive writing.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Investigation Notes",
-                            topic: "Research Skills",
-                            gameMechanics: ["Gather sources, tag credibility"],
-                            swiftUITechniques: ["NavigationSplitView for sources", "Tagging with swipe actions"],
-                            reward: "Unlock research assistant bots"
-                        ),
-                        CurriculumQuest(
-                            title: "Figurative Language Studio",
-                            topic: "Figurative Language",
-                            gameMechanics: ["Identify and craft figurative phrases"],
-                            swiftUITechniques: ["Interactive checklist for figurative types", "Audio narration for dramatic readings"],
-                            reward: "Earn spotlight animations for presentations"
-                        ),
-                        CurriculumQuest(
-                            title: "Argument Builder",
-                            topic: "Argumentative Writing",
-                            gameMechanics: ["Assemble claim, evidence, reasoning cards", "Peer-style NPC feedback"],
-                            swiftUITechniques: ["Card deck arrangement with DragGesture", "Rubric scoring view for feedback"],
-                            reward: "Unlock debate stage cosmetics"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Conduct mission control simulations and long-term ecosystem monitoring.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Mission Control",
-                            topic: "Space & Earth Systems",
-                            gameMechanics: ["Adjust mission variables to maintain spacecraft health"],
-                            swiftUITechniques: ["Dashboard with gauges using SwiftUI", "Timers and alerts via Combine"],
-                            reward: "Unlock mission patches and call signs"
-                        ),
-                        CurriculumQuest(
-                            title: "Mixture Lab",
-                            topic: "Mixtures & Solutions",
-                            gameMechanics: ["Mix virtual chemicals to achieve target outcomes"],
-                            swiftUITechniques: ["SpriteKit particle mixing", "Log data to Core Data lab notebook"],
-                            reward: "Earn lab safety gear items"
-                        ),
-                        CurriculumQuest(
-                            title: "Ecosystem Watchtower",
-                            topic: "Ecosystem Monitoring",
-                            gameMechanics: ["Schedule check-ins and respond to ecosystem events"],
-                            swiftUITechniques: ["Local notifications for follow-ups", "Charts for long-term trend visualization"],
-                            reward: "Unlock wildlife cams in the base"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Lead debates and strategy missions to explore history and civic responsibility.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Historical Timeline Forge",
-                            topic: "US History",
-                            gameMechanics: ["Assemble interactive timelines", "Make perspective-taking notes"],
-                            swiftUITechniques: ["Scrollable timeline with LazyHStack", "Annotate events with context menus"],
-                            reward: "Unlock museum exhibits in the alliance HQ"
-                        ),
-                        CurriculumQuest(
-                            title: "Debate Arena",
-                            topic: "Debate & Civics",
-                            gameMechanics: ["Turn-based debates with persuasion meter"],
-                            swiftUITechniques: ["State-driven dialog view", "Optional GameKit turn handling"],
-                            reward: "Earn leadership titles and banners"
-                        ),
-                        CurriculumQuest(
-                            title: "Strategy Maps",
-                            topic: "Geography & Economics",
-                            gameMechanics: ["Manage trade routes and resources on strategic maps"],
-                            swiftUITechniques: ["MapKit overlays with resource icons", "Charts summarizing supply demand"],
-                            reward: "Unlock alliance trade routes"
-                        )
-                    ]
-                )
-            ]
-        ),
-        .init(
-            grade: .grade6,
-            overview: "Quest chains introduce ratios, advanced writing, and scientific inquiry with branching diplomacy missions.",
-            guidingTheme: "Global Guardians",
-            tracks: [
-                CurriculumTrack(
-                    subject: .math,
-                    storyline: "Balance city regions using ratios, integers, and coordinate challenges.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Ratio Rescue",
-                            topic: "Ratios & Rates",
-                            gameMechanics: ["Adjust recipe ratios to aid regions", "Challenge mode with limited supplies"],
-                            swiftUITechniques: ["Use sliders and steppers bound to ratio models", "Provide hint tiers triggered by errors"],
-                            reward: "Unlock ration packs that boost future quests"
-                        ),
-                        CurriculumQuest(
-                            title: "Integer Ice Caves",
-                            topic: "Integers",
-                            gameMechanics: ["Navigate caves by solving integer puzzles"],
-                            swiftUITechniques: ["Coordinate plane rendered via Canvas", "Animate character moves per correct answer"],
-                            reward: "Unlock guardian pets with elemental powers"
-                        ),
-                        CurriculumQuest(
-                            title: "Coordinate Command",
-                            topic: "Coordinate Planes & Algebraic Thinking",
-                            gameMechanics: ["Battle battleships on coordinate grids", "Solve algebra gates to advance"],
-                            swiftUITechniques: ["Plot interactive grids with Canvas", "Equation builder validating input locally"],
-                            reward: "Gain access to advanced quest chains"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .language,
-                    storyline: "Investigate global mysteries through literary analysis and persuasive writing.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Evidence Lab",
-                            topic: "Literary Analysis",
-                            gameMechanics: ["Tag textual evidence to support claims"],
-                            swiftUITechniques: ["Split view for text and annotation", "Evidence tagging with swipe gestures"],
-                            reward: "Unlock analysis lenses that highlight themes"
-                        ),
-                        CurriculumQuest(
-                            title: "Debate League",
-                            topic: "Argumentative Writing & Speaking",
-                            gameMechanics: ["Prepare cases, then debate AI or siblings"],
-                            swiftUITechniques: ["Dialog turn engine using Combine", "Optional GameKit turn sync"],
-                            reward: "Earn debate trophies and hall of fame placement"
-                        ),
-                        CurriculumQuest(
-                            title: "Media Investigation",
-                            topic: "Media Literacy",
-                            gameMechanics: ["Critique multimedia sources and identify bias"],
-                            swiftUITechniques: ["Local AVPlayer with annotation overlays", "Store media critiques with markdown support"],
-                            reward: "Unlock newsroom studio upgrades"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .science,
-                    storyline: "Lead global labs exploring cells, energy, and climate feedback systems.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Cell City",
-                            topic: "Cells & Systems",
-                            gameMechanics: ["Build cell models by placing organelles", "Quiz-based defense mini-game"],
-                            swiftUITechniques: ["Use DragGesture to place organelles", "Animate defenses via SpriteKit"],
-                            reward: "Unlock microscopy filters for lab view"
-                        ),
-                        CurriculumQuest(
-                            title: "Energy Network",
-                            topic: "Energy Transfer",
-                            gameMechanics: ["Optimize energy grids with variable inputs"],
-                            swiftUITechniques: ["Sliders to adjust inputs", "Charts/graphs showing efficiency"],
-                            reward: "Gain energy cores powering new missions"
-                        ),
-                        CurriculumQuest(
-                            title: "Climate Quest",
-                            topic: "Earth Systems & Scientific Method",
-                            gameMechanics: ["Run multi-variable experiments to stabilize climate", "Log hypotheses/results"],
-                            swiftUITechniques: ["Store experiments in Core Data", "Use Charts for trend analysis", "Schedule reminders for follow-up"],
-                            reward: "Unlock global diplomacy missions"
-                        )
-                    ]
-                ),
-                CurriculumTrack(
-                    subject: .values,
-                    storyline: "Negotiate peace, manage trade, and explore ethics across continents.",
-                    quests: [
-                        CurriculumQuest(
-                            title: "Diplomacy Nexus",
-                            topic: "Global Citizenship",
-                            gameMechanics: ["Navigate branching diplomacy stories"],
-                            swiftUITechniques: ["Graph-based state machine for decisions", "Persist outcomes to influence future quests"],
-                            reward: "Unlock alliance flags and anthem"
-                        ),
-                        CurriculumQuest(
-                            title: "Trade Winds",
-                            topic: "Economics & Trade",
-                            gameMechanics: ["Balance supply/demand across regions", "Respond to random events"],
-                            swiftUITechniques: ["Charts for market trends", "Inventory UI with virtualization"],
-                            reward: "Gain trade bonuses for the guardian council"
-                        ),
-                        CurriculumQuest(
-                            title: "Ethics Council",
-                            topic: "Ethical Decision Challenges",
-                            gameMechanics: ["Debate solutions with NPC council", "Reflect via journaling"],
-                            swiftUITechniques: ["Dialog engine using state machine", "Markdown-friendly journal saved to Core Data"],
-                            reward: "Earn world harmony emblems"
-                        )
-                    ]
-                )
-            ]
-        )
-    ]
-}
-
-struct CurriculumTrack: Identifiable {
+struct CurriculumSubjectPath: Identifiable {
     let subject: CurriculumSubject
     let storyline: String
-    let quests: [CurriculumQuest]
+    let levels: [CurriculumLevel]
 
     var id: CurriculumSubject { subject }
 }
 
-struct CurriculumQuest: Identifiable {
-    let id = UUID()
+struct CurriculumLevel: Identifiable, Hashable {
+    let id: UUID
     let title: String
-    let topic: String
-    let gameMechanics: [String]
-    let swiftUITechniques: [String]
+    let grade: CurriculumGrade
+    let focus: String
+    let overview: String
+    let questsRequiredForMastery: Int
+    let quests: [CurriculumQuest]
     let reward: String
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        grade: CurriculumGrade,
+        focus: String,
+        overview: String,
+        questsRequiredForMastery: Int,
+        quests: [CurriculumQuest],
+        reward: String
+    ) {
+        self.id = id
+        self.title = title
+        self.grade = grade
+        self.focus = focus
+        self.overview = overview
+        self.questsRequiredForMastery = questsRequiredForMastery
+        self.quests = quests
+        self.reward = reward
+    }
+}
+
+struct CurriculumQuest: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let description: String
+    let checklist: [String]
+
+    init(id: UUID = UUID(), name: String, description: String, checklist: [String]) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.checklist = checklist
+    }
 }
 
 enum CurriculumGrade: String, CaseIterable, Identifiable {
@@ -976,13 +80,13 @@ enum CurriculumGrade: String, CaseIterable, Identifiable {
     }
 }
 
-enum CurriculumSubject: CaseIterable, Identifiable {
+enum CurriculumSubject: String, CaseIterable, Identifiable {
     case math
     case language
     case science
     case values
 
-    var id: Self { self }
+    var id: String { rawValue }
 
     var displayName: String {
         switch self {
@@ -1012,11 +116,1230 @@ enum CurriculumSubject: CaseIterable, Identifiable {
     }
 }
 
-extension CurriculumCourse {
-    static func course(for grade: CurriculumGrade) -> CurriculumCourse {
-        guard let course = catalog.first(where: { $0.grade == grade }) else {
-            preconditionFailure("Missing curriculum for grade \(grade)")
+enum CurriculumCatalog {
+    static func subjectPath(for subject: CurriculumSubject) -> CurriculumSubjectPath {
+        switch subject {
+        case .math: return mathPath
+        case .language: return languagePath
+        case .science: return sciencePath
+        case .values: return valuesPath
         }
-        return course
     }
+
+    static func indexOfFirstLevel(for grade: CurriculumGrade, subject: CurriculumSubject) -> Int? {
+        let levels = subjectPath(for: subject).levels
+        return levels.firstIndex { $0.grade == grade }
+    }
+
+    private static let mathPath = CurriculumSubjectPath(
+        subject: .math,
+        storyline: "Climb the Number Peaks to help the village keep its math clock running.",
+        levels: [
+            CurriculumLevel(
+                title: "Counting Trail",
+                grade: .preK,
+                focus: "Counting and comparing groups within 10",
+                overview: "Learners count critters, compare small sets, and build confidence with numbers to 10.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Meadow Count",
+                        description: "Count animals in the meadow and match the total to numeral cards.",
+                        checklist: [
+                            "Count three groups of critters aloud",
+                            "Match each group to the correct numeral",
+                            "Explain which group has more or fewer"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Pattern Parade",
+                        description: "Finish and create simple AB/ABB patterns with blocks.",
+                        checklist: [
+                            "Complete three unfinished patterns",
+                            "Create a brand-new pattern using the blocks",
+                            "Describe the pattern using words"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Snack Share",
+                        description: "Compare plates of snacks to decide who has more and less.",
+                        checklist: [
+                            "Line up two plates and compare their totals",
+                            "Use the words more, fewer, and same",
+                            "Evenly share a plate between two friends"
+                        ]
+                    )
+                ],
+                reward: "Sticker: Meadow Helper"
+            ),
+            CurriculumLevel(
+                title: "Number Bridge",
+                grade: .kindergarten,
+                focus: "Counting to 20 and early addition/subtraction stories",
+                overview: "Learners extend counting, compose and decompose numbers, and solve picture stories.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Bridge Builder",
+                        description: "Count planks to span a river and label each plank with numbers to 20.",
+                        checklist: [
+                            "Count from any start number up to 20",
+                            "Place the numerals in order on the bridge",
+                            "Skip-count by twos while crossing"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Snack Shop Stories",
+                        description: "Solve addition and subtraction stories using counters.",
+                        checklist: [
+                            "Act out two add-to stories with counters",
+                            "Act out two take-from stories with counters",
+                            "Record each story using an equation"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Teen Number Towers",
+                        description: "Build towers that show tens and ones in teen numbers.",
+                        checklist: [
+                            "Represent three teen numbers with towers",
+                            "Explain how many tens and ones each has",
+                            "Compare two towers and name the greater"
+                        ]
+                    )
+                ],
+                reward: "Badge: Bridge Architect"
+            ),
+            CurriculumLevel(
+                title: "Addition Rapids",
+                grade: .grade1,
+                focus: "Addition and subtraction within 20",
+                overview: "Learners solve equations, balance fact families, and use strategies for sums within 20.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Fact Family Raft",
+                        description: "Use number bonds to complete fact family triangles.",
+                        checklist: [
+                            "Complete four fact family triangles",
+                            "Explain how the facts are connected",
+                            "Sort new facts into the correct family"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Strategy Stones",
+                        description: "Solve sums using make-10 and doubles strategies.",
+                        checklist: [
+                            "Solve three make-10 problems",
+                            "Solve three doubles or near-doubles",
+                            "Share which strategy felt best"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Balance Boats",
+                        description: "Balance equations by finding the missing addend.",
+                        checklist: [
+                            "Fill in three missing-number equations",
+                            "Check each solution with subtraction",
+                            "Create one new balance problem"
+                        ]
+                    )
+                ],
+                reward: "Tool: Fact Raft"
+            ),
+            CurriculumLevel(
+                title: "Place Value Ridge",
+                grade: .grade2,
+                focus: "Place value to 1,000 and addition/subtraction within 100",
+                overview: "Learners regroup tens and hundreds, solve word problems, and use number lines.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Base-Ten Camp",
+                        description: "Represent 3-digit numbers with models and expanded form.",
+                        checklist: [
+                            "Build three numbers with base-ten blocks",
+                            "Write the expanded form for each",
+                            "Compare two numbers using >, <, ="
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Mountain Mail",
+                        description: "Solve two-step word problems for the ranger station.",
+                        checklist: [
+                            "Solve three two-step problems",
+                            "Explain which operation was used each time",
+                            "Check one answer using a different strategy"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Number Line Trek",
+                        description: "Use open number lines to add and subtract within 100.",
+                        checklist: [
+                            "Add two numbers using jumps on a line",
+                            "Subtract two numbers using jumps back",
+                            "Describe how the jumps connect to place value"
+                        ]
+                    )
+                ],
+                reward: "Title: Ridge Navigator"
+            ),
+            CurriculumLevel(
+                title: "Multiplication Forest",
+                grade: .grade3,
+                focus: "Multiplication and division facts within 100",
+                overview: "Learners build arrays, explore equal groups, and relate multiplication to division.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Array Orchard",
+                        description: "Plant tree arrays to represent facts.",
+                        checklist: [
+                            "Create four arrays for given facts",
+                            "Write the related equations",
+                            "Rotate an array and explain why the product stays the same"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Group Gathering",
+                        description: "Use equal groups to solve multiplication stories.",
+                        checklist: [
+                            "Act out three grouping stories",
+                            "Draw a picture or bar model for each",
+                            "Write the inverse division fact"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Fact Quest",
+                        description: "Play a timed fact chase to build fluency.",
+                        checklist: [
+                            "Complete a 2-minute fact run with 90% accuracy",
+                            "Record three facts that were tricky",
+                            "Practice the tricky facts with skip-counting"
+                        ]
+                    )
+                ],
+                reward: "Companion: Fact Fox"
+            ),
+            CurriculumLevel(
+                title: "Fraction Glaciers",
+                grade: .grade4,
+                focus: "Fractions, multi-digit multiplication, and measurement",
+                overview: "Learners compare fractions, multiply multi-digit numbers, and solve measurement problems.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Fraction Flags",
+                        description: "Design camp flags showing equivalent fractions.",
+                        checklist: [
+                            "Create three equivalent fraction sets",
+                            "Place each on a number line",
+                            "Explain how you know the fractions match"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Trail Supplies",
+                        description: "Multiply multi-digit numbers to stock the trail store.",
+                        checklist: [
+                            "Solve two 2-digit by 2-digit problems",
+                            "Solve one 3-digit by 1-digit problem",
+                            "Estimate each product to check"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Ranger Timelines",
+                        description: "Solve elapsed time problems using number lines.",
+                        checklist: [
+                            "Map out two elapsed time scenarios",
+                            "Explain how to convert minutes to hours",
+                            "Create one new problem for a friend"
+                        ]
+                    )
+                ],
+                reward: "Badge: Glacier Guide"
+            ),
+            CurriculumLevel(
+                title: "Ratio Summit",
+                grade: .grade5,
+                focus: "Decimals, fractions operations, and volume",
+                overview: "Learners add/subtract fractions with like denominators, multiply fractions, and work with decimals.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Trail Mix Lab",
+                        description: "Add and subtract fractions to follow recipes.",
+                        checklist: [
+                            "Adjust three recipes by adding fractions",
+                            "Subtract ingredients to scale down",
+                            "Check answers using benchmarks"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Decimal Dashes",
+                        description: "Place decimals on number lines and compare them.",
+                        checklist: [
+                            "Plot decimals to the hundredths place",
+                            "Use >, <, = to compare five pairs",
+                            "Convert one decimal to a fraction"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Campsite Volume",
+                        description: "Calculate volume of rectangular prisms.",
+                        checklist: [
+                            "Find volume for three prisms",
+                            "Explain the formula in your own words",
+                            "Design a prism that meets a volume target"
+                        ]
+                    )
+                ],
+                reward: "Tool: Ratio Compass"
+            ),
+            CurriculumLevel(
+                title: "Algebra Skyline",
+                grade: .grade6,
+                focus: "Ratios, expressions, and data displays",
+                overview: "Learners write expressions, analyze ratios, and summarize data sets.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Market Ratios",
+                        description: "Solve ratio tables and unit rate problems.",
+                        checklist: [
+                            "Complete two ratio tables",
+                            "Find unit rates in three contexts",
+                            "Explain one ratio using words"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Expression Elevators",
+                        description: "Write and evaluate expressions with variables.",
+                        checklist: [
+                            "Translate three verbal phrases to expressions",
+                            "Evaluate each expression for two values",
+                            "Identify terms and coefficients"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Data Observatory",
+                        description: "Create dot plots and histograms to describe data.",
+                        checklist: [
+                            "Collect or use a provided data set",
+                            "Draw a dot plot and a histogram",
+                            "Write two observations about the data"
+                        ]
+                    )
+                ],
+                reward: "Title: Skyline Analyst"
+            )
+        ]
+    )
+
+    private static let languagePath = CurriculumSubjectPath(
+        subject: .language,
+        storyline: "Restore the Story Grove by mastering phonics, fluency, and writing.",
+        levels: [
+            CurriculumLevel(
+                title: "Alphabet Meadow",
+                grade: .preK,
+                focus: "Letter recognition and sound awareness",
+                overview: "Learners identify letters, match sounds, and build first name recognition.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Letter Hunt",
+                        description: "Search the meadow for uppercase and lowercase pairs.",
+                        checklist: [
+                            "Match ten letters to their lowercase partner",
+                            "Name the sound for five letters",
+                            "Build your name with letter cards"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Sound Picnic",
+                        description: "Sort picnic foods by beginning sound.",
+                        checklist: [
+                            "Sort eight foods into sound baskets",
+                            "Name a new word for two baskets",
+                            "Clap the syllables for three foods"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Story Stretch",
+                        description: "Retell a simple picture story with beginning, middle, end.",
+                        checklist: [
+                            "Name the characters",
+                            "Describe what happened first, next, last",
+                            "Share your favorite part"
+                        ]
+                    )
+                ],
+                reward: "Sticker: Story Sprout"
+            ),
+            CurriculumLevel(
+                title: "Phonics Brook",
+                grade: .kindergarten,
+                focus: "Short vowels, sight words, and sentence building",
+                overview: "Learners decode CVC words, write simple sentences, and read emergent text.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Word Builders",
+                        description: "Blend sounds to build CVC words with tiles.",
+                        checklist: [
+                            "Blend six CVC words",
+                            "Swap the first sound to make a new word",
+                            "Sort words by vowel sound"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Sight Word Steps",
+                        description: "Read and write high-frequency words.",
+                        checklist: [
+                            "Read a stack of ten sight words",
+                            "Write each word in a sentence",
+                            "Play a quick flash-card game"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Sentence Garden",
+                        description: "Build sentences with capital letters and periods.",
+                        checklist: [
+                            "Arrange word cards to make three sentences",
+                            "Rewrite one sentence with handwriting practice",
+                            "Illustrate your favorite sentence"
+                        ]
+                    )
+                ],
+                reward: "Badge: Brook Reader"
+            ),
+            CurriculumLevel(
+                title: "Reading Rail",
+                grade: .grade1,
+                focus: "Fluency, story elements, and opinion writing",
+                overview: "Learners retell stories, identify characters and settings, and write short opinions.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Fluency Train",
+                        description: "Practice reading a passage aloud with expression.",
+                        checklist: [
+                            "Read the passage three times",
+                            "Record words that were tricky",
+                            "Perform the passage for a listener"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Story Stop",
+                        description: "Identify characters, setting, and key events.",
+                        checklist: [
+                            "Complete a story map",
+                            "Retell the story using first, next, then, last",
+                            "Name the problem and solution"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Opinion Post",
+                        description: "Write a short opinion paragraph.",
+                        checklist: [
+                            "State your opinion in the first sentence",
+                            "Give two reasons with details",
+                            "Wrap up with a closing sentence"
+                        ]
+                    )
+                ],
+                reward: "Tool: Story Map"
+            ),
+            CurriculumLevel(
+                title: "Chapter Crossing",
+                grade: .grade2,
+                focus: "Fables, main idea, and informative writing",
+                overview: "Learners find main ideas, describe character lessons, and write facts.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Fable Ferry",
+                        description: "Read fables and explain the moral.",
+                        checklist: [
+                            "List the characters in two fables",
+                            "Describe the lesson each character learns",
+                            "Connect a moral to a real-life example"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Main Idea Markers",
+                        description: "Identify main idea and key details in nonfiction.",
+                        checklist: [
+                            "Highlight the main idea sentence",
+                            "List three supporting details",
+                            "Summarize the passage in two sentences"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Fact Builder",
+                        description: "Write an informative paragraph with topic sentence and facts.",
+                        checklist: [
+                            "Choose a topic and gather three facts",
+                            "Write using a topic sentence and detail sentences",
+                            "Add a closing sentence"
+                        ]
+                    )
+                ],
+                reward: "Companion: Fact Owl"
+            ),
+            CurriculumLevel(
+                title: "Reading Rapids",
+                grade: .grade3,
+                focus: "Text structure, vocabulary, and narrative writing",
+                overview: "Learners compare texts, determine meaning of unknown words, and craft narratives with dialogue.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Structure Scout",
+                        description: "Compare cause-and-effect and sequence passages.",
+                        checklist: [
+                            "Identify signal words in two texts",
+                            "Create a graphic organizer for each",
+                            "Explain how structure changes the message"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Word Explorer",
+                        description: "Use context clues and prefixes to determine word meaning.",
+                        checklist: [
+                            "Define five words using context",
+                            "Sort words by prefix meaning",
+                            "Create a mini-glossary"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Narrative Rapids",
+                        description: "Write a narrative with beginning, middle, end, and dialogue.",
+                        checklist: [
+                            "Brainstorm characters and setting",
+                            "Draft the problem, rising action, and solution",
+                            "Add dialogue with quotation marks"
+                        ]
+                    )
+                ],
+                reward: "Badge: Rapids Author"
+            ),
+            CurriculumLevel(
+                title: "Literary Lighthouse",
+                grade: .grade4,
+                focus: "Theme, point of view, and research writing",
+                overview: "Learners analyze theme, compare first- and third-person narrators, and write multi-paragraph reports.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Theme Signals",
+                        description: "Identify themes in myths and poems.",
+                        checklist: [
+                            "Note key details that suggest theme",
+                            "State the theme in a single sentence",
+                            "Explain how the characters support the theme"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Perspective Patrol",
+                        description: "Compare point of view between two texts.",
+                        checklist: [
+                            "Identify narrator clues",
+                            "Explain how point of view changes the story",
+                            "Rewrite a paragraph from a new perspective"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Research Beacon",
+                        description: "Write a research report with cited sources.",
+                        checklist: [
+                            "Gather facts from two sources",
+                            "Organize notes into sections",
+                            "Draft, revise, and include a source list"
+                        ]
+                    )
+                ],
+                reward: "Title: Lighthouse Scholar"
+            ),
+            CurriculumLevel(
+                title: "Argument Avenue",
+                grade: .grade5,
+                focus: "Comparing multiple accounts and opinion essays",
+                overview: "Learners analyze differing viewpoints, support claims with evidence, and present speeches.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Eyewitness Files",
+                        description: "Compare two accounts of the same event.",
+                        checklist: [
+                            "Record similarities and differences",
+                            "Judge which details are most reliable",
+                            "Explain why two accounts might disagree"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Evidence Workshop",
+                        description: "Plan an opinion essay with clear reasons and evidence.",
+                        checklist: [
+                            "State a claim and three reasons",
+                            "Match each reason with text evidence",
+                            "Draft an engaging introduction"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Voice Share",
+                        description: "Deliver a short persuasive speech.",
+                        checklist: [
+                            "Practice using transitions",
+                            "Maintain eye contact and pacing",
+                            "Reflect on audience feedback"
+                        ]
+                    )
+                ],
+                reward: "Tool: Debate Deck"
+            ),
+            CurriculumLevel(
+                title: "Literacy Summit",
+                grade: .grade6,
+                focus: "Claims, evidence, and literary analysis",
+                overview: "Learners trace arguments, analyze how chapters build, and write literary essays.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Argument Analyzer",
+                        description: "Trace arguments in nonfiction and identify counterclaims.",
+                        checklist: [
+                            "Record the author's claim",
+                            "List supporting reasons and evidence",
+                            "Identify a counterclaim and rebuttal"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Structure Sleuth",
+                        description: "Analyze how scenes or stanzas build meaning.",
+                        checklist: [
+                            "Break a chapter into key scenes",
+                            "Explain how each scene moves the plot",
+                            "Connect one scene to the theme"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Literary Essay",
+                        description: "Write an essay comparing two texts on a shared theme.",
+                        checklist: [
+                            "Draft a thesis statement",
+                            "Use textual evidence from both works",
+                            "Conclude by synthesizing insights"
+                        ]
+                    )
+                ],
+                reward: "Title: Summit Author"
+            )
+        ]
+    )
+
+    private static let sciencePath = CurriculumSubjectPath(
+        subject: .science,
+        storyline: "Travel through the Discovery Biomes to investigate the natural world.",
+        levels: [
+            CurriculumLevel(
+                title: "Senses Grove",
+                grade: .preK,
+                focus: "Five senses and nature observation",
+                overview: "Learners explore sensory stations and practice describing observations.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Sound Safari",
+                        description: "Identify animal and environment sounds.",
+                        checklist: [
+                            "Match five sounds to the correct picture",
+                            "Describe how the sound made you feel",
+                            "Share which sense helped the most"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Texture Trail",
+                        description: "Sort objects by texture and observe with magnifiers.",
+                        checklist: [
+                            "Sort objects into smooth, rough, bumpy",
+                            "Describe each using two adjectives",
+                            "Draw one object you observed"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Weather Watch",
+                        description: "Track the weather for three days.",
+                        checklist: [
+                            "Identify sky conditions",
+                            "Record temperature using a simple thermometer",
+                            "Choose clothing for each day"
+                        ]
+                    )
+                ],
+                reward: "Sticker: Sense Detective"
+            ),
+            CurriculumLevel(
+                title: "Habitat Marsh",
+                grade: .kindergarten,
+                focus: "Animals, plants, and local weather patterns",
+                overview: "Learners classify living things, track weather, and care for classroom plants.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Living vs. Non-living",
+                        description: "Sort items collected on a nature walk.",
+                        checklist: [
+                            "Decide if each item is living, once-living, or non-living",
+                            "Explain the reason for each choice",
+                            "Sketch one plant and one animal"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Weather Station",
+                        description: "Chart daily weather data and compare across a week.",
+                        checklist: [
+                            "Measure temperature and precipitation",
+                            "Create a weather pictograph",
+                            "Predict tomorrow's weather based on the chart"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Plant Care",
+                        description: "Care for seedlings in the classroom garden.",
+                        checklist: [
+                            "Record plant height twice a week",
+                            "Describe plant needs (water, sun, soil)",
+                            "Share a tip for keeping plants healthy"
+                        ]
+                    )
+                ],
+                reward: "Badge: Habitat Helper"
+            ),
+            CurriculumLevel(
+                title: "Sky Lab",
+                grade: .grade1,
+                focus: "Patterns of the sun, moon, and stars",
+                overview: "Learners observe the sky, model day/night, and track seasonal patterns.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Shadow Tracker",
+                        description: "Measure how a shadow changes during the day.",
+                        checklist: [
+                            "Record shadow length in the morning and afternoon",
+                            "Explain why the shadow changed",
+                            "Create a simple sun model"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Moon Journal",
+                        description: "Sketch moon phases for two weeks.",
+                        checklist: [
+                            "Draw the moon each night",
+                            "Sequence the drawings",
+                            "Describe the repeating pattern"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Season Sort",
+                        description: "Match animal behaviors and weather to seasons.",
+                        checklist: [
+                            "Sort cards into season categories",
+                            "Explain how animals prepare for a season",
+                            "Write a sentence about your favorite season"
+                        ]
+                    )
+                ],
+                reward: "Tool: Star Viewer"
+            ),
+            CurriculumLevel(
+                title: "Forces Workshop",
+                grade: .grade2,
+                focus: "Pushes, pulls, and changes in motion",
+                overview: "Learners plan investigations about motion and design simple solutions.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Ramp Races",
+                        description: "Test how surface and slope affect speed.",
+                        checklist: [
+                            "Plan the test using fair rules",
+                            "Record three trials with data",
+                            "Share conclusions using evidence"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Balloon Rockets",
+                        description: "Design a rocket to carry a paper astronaut across a line.",
+                        checklist: [
+                            "Sketch the design",
+                            "Test and refine the rocket",
+                            "Explain how air pushes the rocket"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Magnet Mystery",
+                        description: "Investigate which materials are magnetic.",
+                        checklist: [
+                            "Test at least five materials",
+                            "Record yes/no results",
+                            "Describe a real-world use for magnets"
+                        ]
+                    )
+                ],
+                reward: "Companion: Motion Bot"
+            ),
+            CurriculumLevel(
+                title: "Ecosystem Expedition",
+                grade: .grade3,
+                focus: "Life cycles, food webs, and traits",
+                overview: "Learners model life cycles, build food chains, and explore inherited traits.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Life Cycle Lab",
+                        description: "Compare the life cycles of two organisms.",
+                        checklist: [
+                            "Create diagrams for each life cycle",
+                            "Highlight similarities and differences",
+                            "Explain how each stage helps survival"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Food Web Builder",
+                        description: "Construct a food web for a chosen habitat.",
+                        checklist: [
+                            "List producers, consumers, and decomposers",
+                            "Draw arrows to show energy flow",
+                            "Describe what happens if one species disappears"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Trait Detective",
+                        description: "Classify traits as inherited or learned.",
+                        checklist: [
+                            "Sort trait cards",
+                            "Interview a family member about traits",
+                            "Share one trait you would like to learn"
+                        ]
+                    )
+                ],
+                reward: "Badge: Ecosystem Explorer"
+            ),
+            CurriculumLevel(
+                title: "Energy Lab",
+                grade: .grade4,
+                focus: "Energy transfer and waves",
+                overview: "Learners explore light, sound, and electric circuits through experiments.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Light Paths",
+                        description: "Investigate reflection and refraction with mirrors and water.",
+                        checklist: [
+                            "Predict what will happen before testing",
+                            "Record observations with diagrams",
+                            "Explain the difference between reflection and refraction"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Sound Signals",
+                        description: "Build devices to communicate using patterns of sound.",
+                        checklist: [
+                            "Design a sound pattern using vibrations",
+                            "Test the signal with a partner",
+                            "Revise the design to improve clarity"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Circuit Challenge",
+                        description: "Create series and parallel circuits.",
+                        checklist: [
+                            "Draw a circuit diagram",
+                            "Build and test the circuit",
+                            "Explain how energy moves through the circuit"
+                        ]
+                    )
+                ],
+                reward: "Title: Energy Engineer"
+            ),
+            CurriculumLevel(
+                title: "Earth Systems Summit",
+                grade: .grade5,
+                focus: "Earth's systems and human impact",
+                overview: "Learners model Earth's systems, analyze weather data, and design solutions for environmental challenges.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Spheres Model",
+                        description: "Create models showing interactions of geosphere, hydrosphere, atmosphere, biosphere.",
+                        checklist: [
+                            "Illustrate each sphere",
+                            "Explain two interactions between spheres",
+                            "Describe how humans impact one interaction"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Storm Data Lab",
+                        description: "Analyze weather maps and graph trends.",
+                        checklist: [
+                            "Interpret a weather map",
+                            "Graph temperature or precipitation across five days",
+                            "Predict future weather using evidence"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Impact Innovators",
+                        description: "Propose a solution to reduce human impact on an ecosystem.",
+                        checklist: [
+                            "Identify a local environmental issue",
+                            "Design a solution with labeled diagram",
+                            "Explain how the solution helps the ecosystem"
+                        ]
+                    )
+                ],
+                reward: "Tool: Eco Blueprint"
+            ),
+            CurriculumLevel(
+                title: "STEM Observatory",
+                grade: .grade6,
+                focus: "Cells, energy transfer, and Earth in space",
+                overview: "Learners model cells, investigate energy in ecosystems, and explore Earth's place in the universe.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Cell City",
+                        description: "Model animal and plant cells and describe organelle functions.",
+                        checklist: [
+                            "Construct models for both cell types",
+                            "Label each organelle and function",
+                            "Compare similarities and differences"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Energy Flow Lab",
+                        description: "Analyze energy transfer through ecosystems.",
+                        checklist: [
+                            "Create an energy pyramid",
+                            "Calculate energy transfer between levels",
+                            "Discuss factors that disrupt the flow"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Solar System Survey",
+                        description: "Investigate scale and motion within the solar system.",
+                        checklist: [
+                            "Model orbital paths",
+                            "Explain day/night and seasons",
+                            "Compare planets using gathered data"
+                        ]
+                    )
+                ],
+                reward: "Title: Observatory Scholar"
+            )
+        ]
+    )
+
+    private static let valuesPath = CurriculumSubjectPath(
+        subject: .values,
+        storyline: "Guide the Harmony Village through character quests and community missions.",
+        levels: [
+            CurriculumLevel(
+                title: "Kindness Corner",
+                grade: .preK,
+                focus: "Sharing, turn-taking, and feelings",
+                overview: "Learners identify feelings, practice sharing, and use words to solve small problems.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Feelings Garden",
+                        description: "Match faces to feeling words and act them out.",
+                        checklist: [
+                            "Name feelings for six faces",
+                            "Act out a feeling using your body",
+                            "Share a strategy to feel calm"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Sharing Picnic",
+                        description: "Practice turn-taking with toys and snacks.",
+                        checklist: [
+                            "Model asking for a turn",
+                            "Suggest a fair sharing plan",
+                            "Reflect on how sharing made others feel"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Kind Words",
+                        description: "Use sentence starters to solve playground problems.",
+                        checklist: [
+                            "Role-play two conflict scenarios",
+                            "Choose kind words to help",
+                            "Draw a picture of the solution"
+                        ]
+                    )
+                ],
+                reward: "Sticker: Harmony Heart"
+            ),
+            CurriculumLevel(
+                title: "Friendship Lane",
+                grade: .kindergarten,
+                focus: "Cooperation, honesty, and empathy",
+                overview: "Learners role-play friendship choices, practice honesty, and listen with empathy.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Team Builders",
+                        description: "Complete tasks that require cooperation.",
+                        checklist: [
+                            "Plan a tower build with a partner",
+                            "Take turns adding pieces",
+                            "Share how teamwork helped"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Truth Detectives",
+                        description: "Decide what to do when mistakes happen.",
+                        checklist: [
+                            "Listen to a short scenario",
+                            "Explain why telling the truth matters",
+                            "Practice apologizing and fixing the mistake"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Empathy Ears",
+                        description: "Practice listening and reflecting feelings.",
+                        checklist: [
+                            "Listen to a classmate share a story",
+                            "Reflect back what you heard",
+                            "Offer a kind response"
+                        ]
+                    )
+                ],
+                reward: "Badge: Friendship Ally"
+            ),
+            CurriculumLevel(
+                title: "Community Square",
+                grade: .grade1,
+                focus: "Rules, responsibilities, and community helpers",
+                overview: "Learners explain classroom responsibilities, identify helpers, and create thank-you messages.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Rule Builders",
+                        description: "Create posters explaining why rules keep us safe.",
+                        checklist: [
+                            "List three important rules",
+                            "Explain the reason for each",
+                            "Design a poster to teach younger students"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Helper Spotlight",
+                        description: "Research community helpers and their tools.",
+                        checklist: [
+                            "Choose a helper to interview or research",
+                            "List three responsibilities",
+                            "Create a thank-you card"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Responsibility Chart",
+                        description: "Track a personal responsibility for one week.",
+                        checklist: [
+                            "Choose a responsibility",
+                            "Record success each day",
+                            "Reflect on what helped you remember"
+                        ]
+                    )
+                ],
+                reward: "Companion: Helper Firefly"
+            ),
+            CurriculumLevel(
+                title: "Courage Trail",
+                grade: .grade2,
+                focus: "Problem solving, perseverance, and respect",
+                overview: "Learners practice growth mindset, respect differences, and solve peer conflicts.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Growth Garden",
+                        description: "Learn phrases that show perseverance.",
+                        checklist: [
+                            "Sort fixed vs. growth mindset phrases",
+                            "Create a personal perseverance plan",
+                            "Share a time you kept trying"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Respect Rally",
+                        description: "Celebrate similarities and differences in classmates.",
+                        checklist: [
+                            "Interview a classmate",
+                            "Find two things you share and two that are different",
+                            "Design a mini-poster celebrating diversity"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Peace Path",
+                        description: "Use a simple conflict-resolution script.",
+                        checklist: [
+                            "Role-play the peace path steps",
+                            "Practice using I-statements",
+                            "Reflect on how the solution felt"
+                        ]
+                    )
+                ],
+                reward: "Badge: Courage Keeper"
+            ),
+            CurriculumLevel(
+                title: "Citizenship Harbor",
+                grade: .grade3,
+                focus: "Local government, rights, and responsibilities",
+                overview: "Learners explore community rules, volunteerism, and how citizens make a difference.",
+                questsRequiredForMastery: 2,
+                quests: [
+                    CurriculumQuest(
+                        name: "Civic Map",
+                        description: "Map the services in your community.",
+                        checklist: [
+                            "List five community services",
+                            "Identify who provides each service",
+                            "Share how citizens can help"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Volunteer Vision",
+                        description: "Plan a simple service project for school or neighborhood.",
+                        checklist: [
+                            "Choose a cause",
+                            "List materials or helpers needed",
+                            "Explain how the project benefits others"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Rights & Rules",
+                        description: "Explain how rules protect rights.",
+                        checklist: [
+                            "Match rights with the rules that protect them",
+                            "Discuss what happens if rules are broken",
+                            "Role-play solving a community issue"
+                        ]
+                    )
+                ],
+                reward: "Tool: Civic Journal"
+            ),
+            CurriculumLevel(
+                title: "Heritage Ridge",
+                grade: .grade4,
+                focus: "State history, cultural heritage, and ethics",
+                overview: "Learners research state history, analyze historical choices, and celebrate traditions.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Timeline Trail",
+                        description: "Build a timeline of key state events.",
+                        checklist: [
+                            "Select five significant events",
+                            "Describe the impact of each event",
+                            "Identify whose voices were missing"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Heritage Spotlight",
+                        description: "Interview a family member or community elder about traditions.",
+                        checklist: [
+                            "Prepare respectful questions",
+                            "Record traditions or celebrations",
+                            "Share how traditions teach values"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Ethics Forum",
+                        description: "Debate a historical decision from multiple perspectives.",
+                        checklist: [
+                            "Identify the decision and stakeholders",
+                            "List possible choices and consequences",
+                            "State your opinion with supporting reasons"
+                        ]
+                    )
+                ],
+                reward: "Badge: Heritage Guide"
+            ),
+            CurriculumLevel(
+                title: "Leadership Lookout",
+                grade: .grade5,
+                focus: "U.S. government, media literacy, and collaborative leadership",
+                overview: "Learners analyze founding documents, evaluate sources, and practice collaborative decision making.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Government Blueprint",
+                        description: "Explain the three branches of government using a graphic.",
+                        checklist: [
+                            "Describe each branch's job",
+                            "Give an example of checks and balances",
+                            "Explain why separation of powers matters"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Source Detective",
+                        description: "Evaluate the reliability of news and online sources.",
+                        checklist: [
+                            "Check author credentials",
+                            "Distinguish fact from opinion",
+                            "Identify persuasive techniques"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Leadership Council",
+                        description: "Work in a team to solve a school issue.",
+                        checklist: [
+                            "Assign roles and responsibilities",
+                            "Use consensus or voting to decide",
+                            "Reflect on how the team collaborated"
+                        ]
+                    )
+                ],
+                reward: "Tool: Leadership Lanyard"
+            ),
+            CurriculumLevel(
+                title: "Global Harmony",
+                grade: .grade6,
+                focus: "Global citizenship, ethics, and social impact",
+                overview: "Learners research global issues, evaluate ethical dilemmas, and design service projects.",
+                questsRequiredForMastery: 3,
+                quests: [
+                    CurriculumQuest(
+                        name: "Global Issue Brief",
+                        description: "Research a global challenge such as clean water or education access.",
+                        checklist: [
+                            "Gather facts from at least two credible sources",
+                            "Explain the root causes and affected communities",
+                            "Suggest one feasible action"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Ethics Lab",
+                        description: "Debate a scenario with multiple stakeholders.",
+                        checklist: [
+                            "Identify the stakeholders and their viewpoints",
+                            "Discuss short- and long-term consequences",
+                            "Decide on an ethical action and justify it"
+                        ]
+                    ),
+                    CurriculumQuest(
+                        name: "Impact Project",
+                        description: "Design a service project plan that could be carried out locally.",
+                        checklist: [
+                            "State the project goal and audience",
+                            "Outline steps, materials, and timeline",
+                            "Describe how success will be measured"
+                        ]
+                    )
+                ],
+                reward: "Title: Harmony Ambassador"
+            )
+        ]
+    )
 }
