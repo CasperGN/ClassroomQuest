@@ -677,9 +677,20 @@ private struct CurriculumLevelPlayView: View {
                         .foregroundStyle(CQTheme.textSecondary)
                 }
 
-                Spacer()
+                Spacer(minLength: 12)
 
                 VStack(spacing: 6) {
+                    Button {
+                        activeQuest = quest
+                    } label: {
+                        Text(isComplete ? "Replay" : "Continue")
+                            .font(.cqCaption)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(subject.accentColor)
+
                     Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
                         .foregroundStyle(isComplete ? CQTheme.yellowAccent : CQTheme.textSecondary)
@@ -701,15 +712,6 @@ private struct CurriculumLevelPlayView: View {
                     }
                 }
             }
-
-            Button {
-                activeQuest = quest
-            } label: {
-                Text(isComplete ? "Replay quest" : "Start quest")
-                    .font(.cqBody1)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
