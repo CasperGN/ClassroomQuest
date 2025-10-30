@@ -32,6 +32,8 @@ struct PlacementPromptView: View {
                         }
                     }
                     .pickerStyle(.inline)
+                    .labelsHidden()
+                    .accessibilityLabel("Grade Level")
                 }
 
                 Section {
@@ -45,13 +47,6 @@ struct PlacementPromptView: View {
                 }
             }
             .navigationTitle("Choose Your Level")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Continue") {
-                        onConfirm(selectedGrade)
-                    }
-                }
-            }
         }
         .interactiveDismissDisabled(!allowDismiss)
     }
