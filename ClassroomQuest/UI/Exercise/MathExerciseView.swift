@@ -16,6 +16,7 @@ struct MathExerciseView: View {
     @State private var results: [MathProblemResult] = []
     @State private var currentIndex: Int = 0
     @State private var completed = false
+    @State private var celebrationID = UUID()
     @State private var submissionError = false
     @State private var showFeedback = false
     @State private var lastResult: MathProblemResult?
@@ -246,6 +247,7 @@ struct MathExerciseView: View {
     private func completeSession() {
         do {
             try progressStore.recordSession(for: route.subject, results: results)
+            celebrationID = UUID()
             completed = true
         } catch {
             assertionFailure("Failed to save session: \(error)")
@@ -255,6 +257,12 @@ struct MathExerciseView: View {
     private var completionView: some View {
         VStack(spacing: 24) {
             ZStack {
+#if canImport(UIKit)
+                LottieView(animationName: "confetti")
+                    .id(celebrationID)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+#endif
                 RoundedRectangle(cornerRadius: 32, style: .continuous)
                     .fill(CQTheme.cardBackground)
                     .shadow(color: Color.black.opacity(0.15), radius: 24, x: 0, y: 16)
@@ -275,6 +283,7 @@ struct MathExerciseView: View {
                 .padding(32)
             }
             .frame(maxWidth: .infinity)
+            .frame(height: 320)
 
             Button {
                 dismiss()
