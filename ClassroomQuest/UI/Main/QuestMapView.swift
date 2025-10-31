@@ -22,7 +22,7 @@ struct QuestMapView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedSubject: CurriculumSubject = .math
     @State private var selectedNode: QuestNode?
-    @State private var navigationPath: [QuestNode] = []
+    @State private var navigationPath = NavigationPath()
     @State private var scrollTarget: ScrollTarget?
     @State private var isProgrammaticScroll = false
 
@@ -607,51 +607,50 @@ private struct CurriculumLevelPlayView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Subject: \(subject.displayName)")
-                        .font(.cqCaption)
-                        .foregroundStyle(subject.accentColor)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Subject: \(subject.displayName)")
+                    .font(.cqCaption)
+                    .foregroundStyle(subject.accentColor)
 
-                    Text(level.overview)
-                        .font(.cqBody2)
-                        .foregroundStyle(CQTheme.textSecondary)
+                Text(level.overview)
+                    .font(.cqBody2)
+                    .foregroundStyle(CQTheme.textSecondary)
 
-                    ForEach(level.quests) { quest in
-                        questCard(for: quest)
-                    }
-
-                    completionFooter
+                ForEach(level.quests) { quest in
+                    questCard(for: quest)
                 }
-                .padding(24)
+
+                completionFooter
             }
-            .background(LinearGradient.cqSoftAdventure.ignoresSafeArea())
-            .navigationTitle(level.title)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        progressStore.recordCurriculumIncompleteAttempt(
-                            for: level,
-                            subject: subject,
-                            completedQuests: completedQuestCount
-                        )
-                        didRegisterOutcome = true
-                        dismiss()
-                    }
+            .padding(24)
+        }
+        .background(LinearGradient.cqSoftAdventure.ignoresSafeArea())
+        .navigationTitle(level.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") {
+                    progressStore.recordCurriculumIncompleteAttempt(
+                        for: level,
+                        subject: subject,
+                        completedQuests: completedQuestCount
+                    )
+                    didRegisterOutcome = true
+                    dismiss()
                 }
             }
-            .navigationDestination(item: $activeQuest) { quest in
-                QuestActivityRunner(
-                    quest: quest,
-                    level: level,
-                    subject: subject
-                ) { success in
-                    if success {
-                        completedQuests.insert(quest.id)
-                    }
-                    activeQuest = nil
+        }
+        .navigationDestination(item: $activeQuest) { quest in
+            QuestActivityRunner(
+                quest: quest,
+                level: level,
+                subject: subject
+            ) { success in
+                if success {
+                    completedQuests.insert(quest.id)
                 }
+                activeQuest = nil
             }
         }
         .onDisappear {
