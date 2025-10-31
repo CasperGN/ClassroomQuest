@@ -1636,21 +1636,24 @@ private struct DragMatchChallengeView: View {
     }
 
     private var tokenColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 140), spacing: 12)]
+        [
+            GridItem(
+                .adaptive(minimum: 140, maximum: 260),
+                spacing: 12,
+                alignment: .center
+            )
+        ]
     }
 
     private var tokensView: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVGrid(columns: tokenColumns, alignment: .center, spacing: 12) {
-                ForEach(availableAnswers, id: \.self) { answer in
-                    tokenView(for: answer)
-                }
+        LazyVGrid(columns: tokenColumns, alignment: .center, spacing: 12) {
+            ForEach(availableAnswers, id: \.self) { answer in
+                tokenView(for: answer)
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 4)
-            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .scrollDisabled(true)
+        .padding(.horizontal, 8)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private func tokenView(for answer: String) -> some View {
@@ -1706,6 +1709,7 @@ private struct DragMatchChallengeView: View {
                 .foregroundStyle(CQTheme.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
+                .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let assignedText {
@@ -1714,6 +1718,7 @@ private struct DragMatchChallengeView: View {
                         .font(.cqBody1)
                         .foregroundStyle(CQTheme.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
 
                     HStack {
@@ -1734,6 +1739,7 @@ private struct DragMatchChallengeView: View {
                     .font(.cqCaption)
                     .foregroundStyle(CQTheme.textSecondary.opacity(0.7))
                     .frame(maxWidth: .infinity)
+                    .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
