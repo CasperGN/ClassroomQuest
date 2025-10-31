@@ -1301,6 +1301,7 @@ struct QuestActivityRunner: View {
     let onComplete: (Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
     @State private var currentIndex = 0
     @State private var feedback: ChallengeFeedback?
     @State private var isComplete = false
@@ -1432,10 +1433,14 @@ struct QuestActivityRunner: View {
 
         if isCorrect {
             PlayfulHaptics.success()
-            SpeechCoach.shared.celebrateSuccess()
+            if isVoiceAssistEnabled {
+                SpeechCoach.shared.celebrateSuccess()
+            }
         } else {
             PlayfulHaptics.warning()
-            SpeechCoach.shared.encourageRetry()
+            if isVoiceAssistEnabled {
+                SpeechCoach.shared.encourageRetry()
+            }
         }
 
         guard isCorrect else { return }
@@ -1453,7 +1458,9 @@ struct QuestActivityRunner: View {
                     isComplete = true
                     feedback = ChallengeFeedback(text: "Level objective cleared!", isPositive: true)
                     PlayfulHaptics.success()
-                    SpeechCoach.shared.celebrateSuccess()
+                    if isVoiceAssistEnabled {
+                        SpeechCoach.shared.celebrateSuccess()
+                    }
                 }
             }
         }
@@ -1471,14 +1478,35 @@ private struct QuestChallengeView: View {
     let challenge: QuestChallenge
     let onValidated: (Bool) -> Void
 
+    @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
     @State private var numberAnswer: Int = 0
 
     var body: some View {
         VStack(spacing: 18) {
-            Text(challenge.prompt)
-                .font(.cqBody1)
-                .foregroundStyle(CQTheme.textPrimary)
-                .multilineTextAlignment(.center)
+            HStack(alignment: .top, spacing: 12) {
+                Text(challenge.prompt)
+                    .font(.cqBody1)
+                    .foregroundStyle(CQTheme.textPrimary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    SpeechCoach.shared.presentPrompt(challenge.prompt)
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(CQTheme.bluePrimary)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            Circle()
+                                .fill(CQTheme.cardBackground.opacity(0.85))
+                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Speak prompt aloud")
+            }
 
             switch challenge.kind {
             case .counting(let symbol, let quantity):
@@ -1544,6 +1572,8 @@ private struct QuestChallengeView: View {
                         .font(.cqBody1)
                         .foregroundStyle(CQTheme.textPrimary)
                         .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.vertical, 12)
                 }
                 .buttonStyle(.bordered)
@@ -1553,7 +1583,9 @@ private struct QuestChallengeView: View {
 
     private func resetInputs() {
         numberAnswer = 0
-        SpeechCoach.shared.presentPrompt(challenge.prompt)
+        if isVoiceAssistEnabled {
+            SpeechCoach.shared.presentPrompt(challenge.prompt)
+        }
     }
 }
 
@@ -1561,6 +1593,7 @@ private struct DragMatchChallengeView: View {
     let pairs: [DragMatchPair]
     let onValidated: (Bool) -> Void
 
+    @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
     @State private var assignments: [UUID: String] = [:]
     @State private var highlightedTargets: Set<UUID> = []
 
@@ -1621,7 +1654,7 @@ private struct DragMatchChallengeView: View {
             .font(.cqBody1)
             .padding(.vertical, 10)
             .padding(.horizontal, 18)
-            .frame(minHeight: 44)
+            .frame(minWidth: 72, maxWidth: 180, minHeight: 44)
             .background(
                 Capsule()
                     .fill(Color.white.opacity(isAssigned ? 0.35 : 0.9))
@@ -1631,6 +1664,9 @@ private struct DragMatchChallengeView: View {
                     .stroke(CQTheme.bluePrimary.opacity(isAssigned ? 0.3 : 0.8), lineWidth: 1.5)
             )
             .foregroundStyle(CQTheme.textPrimary)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
             .contentShape(Rectangle())
             .draggable(answer) {
                 Capsule()
@@ -1638,6 +1674,9 @@ private struct DragMatchChallengeView: View {
                     .overlay(
                         Text(answer)
                             .font(.cqBody2)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 14)
                     )
             }
@@ -1660,25 +1699,36 @@ private struct DragMatchChallengeView: View {
                 .font(.cqBody2)
                 .foregroundStyle(CQTheme.textSecondary)
                 .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let assignedText {
-                HStack {
+                VStack(alignment: .leading, spacing: 10) {
                     Text(assignedText)
                         .font(.cqBody1)
                         .foregroundStyle(CQTheme.textPrimary)
-                    Spacer()
-                    Button {
-                        removeAssignment(for: pair)
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward.circle")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            removeAssignment(for: pair)
+                        } label: {
+                            Label("Try a different answer", systemImage: "arrow.uturn.backward.circle")
+                                .labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(CQTheme.purpleLanguage)
+                        .accessibilityLabel("Remove assigned answer")
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(CQTheme.purpleLanguage)
                 }
             } else {
                 Text("Drag a match here")
                     .font(.cqCaption)
                     .foregroundStyle(CQTheme.textSecondary.opacity(0.7))
+                    .frame(maxWidth: .infinity)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(16)
@@ -1729,10 +1779,14 @@ private struct DragMatchChallengeView: View {
 
         if success {
             PlayfulHaptics.success()
-            SpeechCoach.shared.celebrateSuccess()
+            if isVoiceAssistEnabled {
+                SpeechCoach.shared.celebrateSuccess()
+            }
         } else {
             PlayfulHaptics.warning()
-            SpeechCoach.shared.encourageRetry()
+            if isVoiceAssistEnabled {
+                SpeechCoach.shared.encourageRetry()
+            }
         }
 
         onValidated(success)
