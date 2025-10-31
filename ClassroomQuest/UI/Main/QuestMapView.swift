@@ -1606,25 +1606,43 @@ private struct DragMatchChallengeView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(availableAnswers, id: \.self) { answer in
-                    Text(answer)
-                        .font(.cqBody1)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-                        .background(
-                            Capsule()
-                                .fill(Color.white.opacity(isAnswerAssigned(answer) ? 0.35 : 0.9))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(CQTheme.bluePrimary.opacity(isAnswerAssigned(answer) ? 0.3 : 0.8), lineWidth: 1.5)
-                        )
-                        .foregroundStyle(CQTheme.textPrimary)
-                        .draggable(answer)
-                        .opacity(isAnswerAssigned(answer) ? 0.55 : 1)
+                    tokenView(for: answer)
                 }
             }
             .padding(.horizontal, 8)
         }
+        .scrollDisabled(true)
+    }
+
+    private func tokenView(for answer: String) -> some View {
+        let isAssigned = isAnswerAssigned(answer)
+
+        return Text(answer)
+            .font(.cqBody1)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 44)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(isAssigned ? 0.35 : 0.9))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(CQTheme.bluePrimary.opacity(isAssigned ? 0.3 : 0.8), lineWidth: 1.5)
+            )
+            .foregroundStyle(CQTheme.textPrimary)
+            .contentShape(Rectangle())
+            .draggable(answer) {
+                Capsule()
+                    .fill(CQTheme.bluePrimary.opacity(0.2))
+                    .overlay(
+                        Text(answer)
+                            .font(.cqBody2)
+                            .padding(.horizontal, 14)
+                    )
+            }
+            .opacity(isAssigned ? 0.55 : 1)
+            .animation(.easeInOut(duration: 0.2), value: isAssigned)
     }
 
     private func dropCard(for pair: DragMatchPair) -> some View {
