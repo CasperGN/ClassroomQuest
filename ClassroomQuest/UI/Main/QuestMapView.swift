@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 struct QuestNode: Identifiable, Equatable, Hashable {
-    enum Status { case locked, current, completed }
+    enum Status { case locked, current, available, completed }
 
     let level: CurriculumLevel
     let subject: CurriculumSubject
@@ -264,6 +264,9 @@ struct QuestMapView: View {
         if let current = nodes.first(where: { $0.status == .current }) {
             return current
         }
+        if let available = nodes.first(where: { $0.status == .available }) {
+            return available
+        }
         if let completed = nodes.first(where: { $0.status == .completed }) {
             return completed
         }
@@ -274,6 +277,7 @@ struct QuestMapView: View {
         switch status {
         case .locked: return "lock.fill"
         case .current: return "sparkles"
+        case .available: return "play.circle"
         case .completed: return "star.fill"
         }
     }
@@ -282,6 +286,7 @@ struct QuestMapView: View {
         switch status {
         case .locked: return CQTheme.textSecondary
         case .current: return subject.accentColor
+        case .available: return subject.accentColor.opacity(0.75)
         case .completed: return CQTheme.yellowAccent
         }
     }
@@ -290,6 +295,7 @@ struct QuestMapView: View {
         switch progressStore.curriculumStatus(for: level, subject: subject) {
         case .locked: return .locked
         case .current: return .current
+        case .available: return .available
         case .completed: return .completed
         }
     }
@@ -442,7 +448,16 @@ private struct SubjectColumnView: View {
                 )
                 .overlay(
                     Circle()
-                        .stroke(colorProvider(node.status), lineWidth: node.status == .current ? 4 : 2)
+                        .stroke(
+                            colorProvider(node.status),
+                            lineWidth: {
+                                switch node.status {
+                                case .current: return 4
+                                case .available: return 3
+                                default: return 2
+                                }
+                            }()
+                        )
                 )
             VStack(spacing: 2) {
                 Text(node.level.title)
@@ -456,7 +471,13 @@ private struct SubjectColumnView: View {
                     .foregroundStyle(CQTheme.textSecondary)
             }
         }
-        .scaleEffect(node.status == .current ? 1.08 : 1)
+        .scaleEffect({
+            switch node.status {
+            case .current: return 1.08
+            case .available: return 1.04
+            default: return 1
+            }
+        }())
         .opacity(node.status == .locked ? 0.55 : 1)
     }
 }
@@ -587,6 +608,7 @@ private struct QuestDetailSheet: View {
         switch status {
         case .locked: return "Locked"
         case .current: return "Continue"
+        case .available: return "Start"
         case .completed: return "Replay"
         }
     }

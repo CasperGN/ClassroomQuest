@@ -5,6 +5,7 @@ import Foundation
 enum CurriculumLevelStatus {
     case locked
     case current
+    case available
     case completed
 }
 
@@ -250,22 +251,8 @@ final class ProgressStore: ObservableObject {
 
         guard !levels.isEmpty else { return .locked }
 
-        var effectiveUnlocked = max(curriculumHighestUnlockedIndex[subject] ?? 0, 0)
-        var sequentialCompletionIndex = -1
-        for candidateIndex in 0..<levels.count {
-            if isCurriculumLevelCompleted(levels[candidateIndex], subject: subject) {
-                sequentialCompletionIndex = candidateIndex
-            } else {
-                break
-            }
-        }
-
-        if levels.count > 0 {
-            let sequentialUnlockIndex = min(sequentialCompletionIndex + 1, levels.count - 1)
-            effectiveUnlocked = max(effectiveUnlocked, sequentialUnlockIndex)
-        }
-
-        let accessibleUpperBound = min(effectiveUnlocked, levels.count - 1)
+        let highestUnlocked = max(curriculumHighestUnlockedIndex[subject] ?? 0, 0)
+        let accessibleUpperBound = min(highestUnlocked, levels.count - 1)
 
         if accessibleUpperBound < 0 || index > accessibleUpperBound {
             return .locked
@@ -274,10 +261,10 @@ final class ProgressStore: ObservableObject {
         if let pendingIndex = (0...accessibleUpperBound).first(where: { candidate in
             !isCurriculumLevelCompleted(levels[candidate], subject: subject)
         }) {
-            return index == pendingIndex ? .current : .locked
+            return index == pendingIndex ? .current : .available
         }
 
-        return .locked
+        return .available
     }
 
     func markCurriculumLevelCompleted(
