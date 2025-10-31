@@ -6,6 +6,7 @@ final class SpeechCoach: NSObject {
     static let shared = SpeechCoach()
 
     private let synthesizer = AVSpeechSynthesizer()
+    private var pendingSpeakWorkItem: DispatchWorkItem?
     private let celebrationPhrases = [
         "Great job!",
         "Awesome work!",
@@ -43,6 +44,7 @@ final class SpeechCoach: NSObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        pendingSpeakWorkItem?.cancel()
         synthesizer.stopSpeaking(at: .immediate)
 
         let utterance = AVSpeechUtterance(string: trimmed)
@@ -51,16 +53,22 @@ final class SpeechCoach: NSObject {
         utterance.pitchMultiplier = pitch
 
         if preDelay > 0 {
-            let deadline = DispatchTime.now() + preDelay
-            DispatchQueue.main.asyncAfter(deadline: deadline) { [weak self] in
-                self?.synthesizer.speak(utterance)
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                self.pendingSpeakWorkItem = nil
+                self.synthesizer.speak(utterance)
             }
+            pendingSpeakWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + preDelay, execute: workItem)
         } else {
+            pendingSpeakWorkItem = nil
             synthesizer.speak(utterance)
         }
     }
 
     func stop() {
+        pendingSpeakWorkItem?.cancel()
+        pendingSpeakWorkItem = nil
         synthesizer.stopSpeaking(at: .immediate)
     }
 }
