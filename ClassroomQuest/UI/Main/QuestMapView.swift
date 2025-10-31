@@ -276,9 +276,9 @@ struct QuestMapView: View {
     private func symbol(for status: QuestNode.Status) -> String {
         switch status {
         case .locked: return "lock.fill"
-        case .current: return "sparkles"
+        case .current: return "star.fill"
         case .available: return "play.circle"
-        case .completed: return "star.fill"
+        case .completed: return "checkmark.seal.fill"
         }
     }
 
