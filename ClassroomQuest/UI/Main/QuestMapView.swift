@@ -639,17 +639,17 @@ private struct CurriculumLevelPlayView: View {
                     }
                 }
             }
-        }
-        .sheet(item: $activeQuest) { quest in
-            QuestActivityRunner(
-                quest: quest,
-                level: level,
-                subject: subject
-            ) { success in
-                if success {
-                    completedQuests.insert(quest.id)
+            .navigationDestination(item: $activeQuest) { quest in
+                QuestActivityRunner(
+                    quest: quest,
+                    level: level,
+                    subject: subject
+                ) { success in
+                    if success {
+                        completedQuests.insert(quest.id)
+                    }
+                    activeQuest = nil
                 }
-                activeQuest = nil
             }
         }
         .onDisappear {
@@ -1320,45 +1320,44 @@ struct QuestActivityRunner: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient.cqSoftAdventure
-                    .ignoresSafeArea()
+        ZStack {
+            LinearGradient.cqSoftAdventure
+                .ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    Text(quest.name)
-                        .font(.cqTitle2)
-                        .foregroundStyle(CQTheme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 12)
+            VStack(spacing: 24) {
+                Text(quest.name)
+                    .font(.cqTitle2)
+                    .foregroundStyle(CQTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 12)
 
-                    if isComplete {
-                        completionView
-                    } else {
-                        challengeContainer
-                    }
-
-                    if let feedback {
-                        Text(feedback.text)
-                            .font(.cqBody2)
-                            .foregroundStyle(feedback.isPositive ? CQTheme.greenSecondary : CQTheme.orangeWarning)
-                            .transition(.opacity)
-                    }
-
-                    Spacer()
+                if isComplete {
+                    completionView
+                } else {
+                    challengeContainer
                 }
-                .padding(24)
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        reportResult(success: false)
-                        dismiss()
-                    }
+
+                if let feedback {
+                    Text(feedback.text)
+                        .font(.cqBody2)
+                        .foregroundStyle(feedback.isPositive ? CQTheme.greenSecondary : CQTheme.orangeWarning)
+                        .transition(.opacity)
                 }
+
+                Spacer()
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(24)
         }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") {
+                    reportResult(success: false)
+                    dismiss()
+                }
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(quest.name)
         .onDisappear {
             reportResult(success: isComplete)
         }
