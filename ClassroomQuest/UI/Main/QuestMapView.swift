@@ -624,6 +624,7 @@ private struct CurriculumLevelPlayView: View {
     @State private var activeQuest: CurriculumQuest?
     @State private var didRegisterOutcome = false
     @State private var didHydrateFromProgress = false
+    @State private var isNavigatingToQuest = false
 
     private var completedQuestCount: Int {
         completedQuests.count
@@ -673,6 +674,7 @@ private struct CurriculumLevelPlayView: View {
                     completedQuests.insert(quest.id)
                 }
                 activeQuest = nil
+                isNavigatingToQuest = false
             }
         }
         .onAppear {
@@ -681,6 +683,9 @@ private struct CurriculumLevelPlayView: View {
             hydrateCompletedQuests()
         }
         .onDisappear {
+            if isNavigatingToQuest {
+                return
+            }
             if !didRegisterOutcome {
                 if completedQuestCount >= level.questsRequiredForMastery {
                     registerCompletion(assisted: false)
@@ -709,6 +714,7 @@ private struct CurriculumLevelPlayView: View {
 
                 VStack(spacing: 6) {
                     Button {
+                        isNavigatingToQuest = true
                         activeQuest = quest
                     } label: {
                         Text(isComplete ? "Replay" : "Continue")
