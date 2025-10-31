@@ -2,7 +2,7 @@ internal import CoreData
 import Foundation
 import SwiftUI
 
-struct QuestNode: Identifiable, Equatable {
+struct QuestNode: Identifiable, Equatable, Hashable {
     enum Status { case locked, current, completed }
 
     let level: CurriculumLevel
@@ -10,8 +10,10 @@ struct QuestNode: Identifiable, Equatable {
     let status: Status
     var id: String { "\(subject.rawValue)-\(level.id.uuidString)" }
 
-    static func == (lhs: QuestNode, rhs: QuestNode) -> Bool {
-        lhs.id == rhs.id
+    static func == (lhs: QuestNode, rhs: QuestNode) -> Bool { lhs.id == rhs.id }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -20,7 +22,7 @@ struct QuestMapView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedSubject: CurriculumSubject = .math
     @State private var selectedNode: QuestNode?
-    @State private var activePlayNode: QuestNode?
+    @State private var navigationPath: [QuestNode] = []
     @State private var scrollTarget: ScrollTarget?
     @State private var isProgrammaticScroll = false
 
@@ -35,7 +37,7 @@ struct QuestMapView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 LinearGradient.cqSoftAdventure
                     .ignoresSafeArea()
@@ -63,13 +65,13 @@ struct QuestMapView: View {
                     onStart: {
                         selectedNode = nil
                         if status != .locked {
-                            activePlayNode = node
+                            navigationPath.append(node)
                         }
                     }
                 )
                 .presentationDetents([.medium, .large])
             }
-            .sheet(item: $activePlayNode) { node in
+            .navigationDestination(for: QuestNode.self) { node in
                 CurriculumLevelPlayView(
                     level: node.level,
                     subject: node.subject
