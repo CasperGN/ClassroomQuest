@@ -1508,14 +1508,14 @@ private struct QuestChallengeView: View {
                 .accessibilityLabel("Speak prompt aloud")
             }
 
-            switch challenge.kind {
-            case .counting(let symbol, let quantity):
-                countingView(symbol: symbol, quantity: quantity)
-            case .multipleChoice(let options, let correctIndex):
-                multipleChoiceView(options: options, correctIndex: correctIndex)
-            case .dragMatch(let pairs):
-                DragMatchChallengeView(pairs: pairs, onValidated: onValidated)
+            ScrollView {
+                VStack(spacing: 18) {
+                    challengeContent
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
             }
+            .scrollIndicators(.hidden)
         }
         .padding(24)
         .frame(maxWidth: .infinity)
@@ -1527,6 +1527,18 @@ private struct QuestChallengeView: View {
         .onAppear(perform: resetInputs)
         .onChange(of: challenge.id) { _, _ in
             resetInputs()
+        }
+    }
+
+    @ViewBuilder
+    private var challengeContent: some View {
+        switch challenge.kind {
+        case .counting(let symbol, let quantity):
+            countingView(symbol: symbol, quantity: quantity)
+        case .multipleChoice(let options, let correctIndex):
+            multipleChoiceView(options: options, correctIndex: correctIndex)
+        case .dragMatch(let pairs):
+            DragMatchChallengeView(pairs: pairs, onValidated: onValidated)
         }
     }
 
@@ -1594,6 +1606,8 @@ private struct DragMatchChallengeView: View {
     let onValidated: (Bool) -> Void
 
     @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var assignments: [UUID: String] = [:]
     @State private var highlightedTargets: Set<UUID> = []
 
@@ -1605,7 +1619,7 @@ private struct DragMatchChallengeView: View {
         VStack(spacing: 18) {
             tokensView
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+            LazyVGrid(columns: dropColumns, spacing: 16) {
                 ForEach(pairs) { pair in
                     dropCard(for: pair)
                 }
@@ -1636,13 +1650,23 @@ private struct DragMatchChallengeView: View {
     }
 
     private var tokenColumns: [GridItem] {
-        [
-            GridItem(
-                .adaptive(minimum: 140, maximum: 260),
-                spacing: 12,
-                alignment: .center
-            )
-        ]
+        let baseCount: Int
+
+        if dynamicTypeSize.isAccessibilitySize {
+            baseCount = 2
+        } else if horizontalSizeClass == .regular {
+            baseCount = 4
+        } else {
+            baseCount = 2
+        }
+
+        let evenCount = max(2, baseCount - baseCount % 2)
+
+        return Array(repeating: GridItem(.flexible(), spacing: 12), count: evenCount)
+    }
+
+    private var dropColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 16), count: 2)
     }
 
     private var tokensView: some View {
