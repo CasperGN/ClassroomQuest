@@ -601,6 +601,7 @@ private struct CurriculumLevelPlayView: View {
     @State private var completedQuests: Set<UUID> = []
     @State private var activeQuest: CurriculumQuest?
     @State private var didRegisterOutcome = false
+    @State private var didHydrateFromProgress = false
 
     private var completedQuestCount: Int {
         completedQuests.count
@@ -631,12 +632,11 @@ private struct CurriculumLevelPlayView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") {
-                    progressStore.recordCurriculumIncompleteAttempt(
-                        for: level,
-                        subject: subject,
-                        completedQuests: completedQuestCount
-                    )
-                    didRegisterOutcome = true
+                    if completedQuestCount >= level.questsRequiredForMastery {
+                        registerCompletion(assisted: false)
+                    } else {
+                        registerIncomplete()
+                    }
                     dismiss()
                 }
             }
@@ -653,14 +653,18 @@ private struct CurriculumLevelPlayView: View {
                 activeQuest = nil
             }
         }
+        .onAppear {
+            guard !didHydrateFromProgress else { return }
+            didHydrateFromProgress = true
+            hydrateCompletedQuests()
+        }
         .onDisappear {
             if !didRegisterOutcome {
-                progressStore.recordCurriculumIncompleteAttempt(
-                    for: level,
-                    subject: subject,
-                    completedQuests: completedQuestCount
-                )
-                didRegisterOutcome = true
+                if completedQuestCount >= level.questsRequiredForMastery {
+                    registerCompletion(assisted: false)
+                } else {
+                    registerIncomplete()
+                }
             }
         }
     }
@@ -731,13 +735,7 @@ private struct CurriculumLevelPlayView: View {
                 .foregroundStyle(CQTheme.textPrimary)
 
             Button {
-                progressStore.markCurriculumLevelCompleted(
-                    level,
-                    subject: subject,
-                    completedQuests: completedQuestCount,
-                    assisted: false
-                )
-                didRegisterOutcome = true
+                registerCompletion(assisted: false)
                 dismiss()
             } label: {
                 Text(completedQuestCount >= level.questsRequiredForMastery ? "Finish Level" : "Keep Working")
@@ -753,13 +751,7 @@ private struct CurriculumLevelPlayView: View {
                 pendingCompletedQuests: completedQuestCount
             ) {
                 Button {
-                    progressStore.markCurriculumLevelCompleted(
-                        level,
-                        subject: subject,
-                        completedQuests: completedQuestCount,
-                        assisted: true
-                    )
-                    didRegisterOutcome = true
+                    registerCompletion(assisted: true)
                     dismiss()
                 } label: {
                     Text("Finish with Coach Assist")
@@ -781,6 +773,44 @@ private struct CurriculumLevelPlayView: View {
                 .fill(CQTheme.cardBackground.opacity(0.95))
                 .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
         )
+    }
+}
+
+private extension CurriculumLevelPlayView {
+    private func hydrateCompletedQuests() {
+        let status = progressStore.curriculumStatus(for: level, subject: subject)
+        if status == .completed {
+            completedQuests = Set(level.quests.map(\.id))
+            return
+        }
+
+        if let record = progressStore.curriculumLevelRecord(for: level, subject: subject) {
+            let count = min(record.bestCompletedQuestCount, level.quests.count)
+            guard count > 0 else { return }
+            let ids = level.quests.prefix(count).map(\.id)
+            completedQuests.formUnion(ids)
+        }
+    }
+
+    private func registerCompletion(assisted: Bool) {
+        guard !didRegisterOutcome else { return }
+        progressStore.markCurriculumLevelCompleted(
+            level,
+            subject: subject,
+            completedQuests: completedQuestCount,
+            assisted: assisted
+        )
+        didRegisterOutcome = true
+    }
+
+    private func registerIncomplete() {
+        guard !didRegisterOutcome else { return }
+        progressStore.recordCurriculumIncompleteAttempt(
+            for: level,
+            subject: subject,
+            completedQuests: completedQuestCount
+        )
+        didRegisterOutcome = true
     }
 }
 

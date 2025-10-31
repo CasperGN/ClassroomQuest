@@ -258,12 +258,20 @@ final class ProgressStore: ObservableObject {
     ) {
         let levels = CurriculumCatalog.subjectPath(for: subject).levels
         guard let index = levels.firstIndex(of: level) else { return }
+        let wasAlreadyCompleted = curriculumStatus(for: level, subject: subject) == .completed
         registerCurriculumAttempt(
             for: level,
             subject: subject,
             completedQuests: completedQuests,
             assisted: assisted
         )
+        if !wasAlreadyCompleted {
+            grantCurriculumCompletionRewards(
+                for: level,
+                subject: subject,
+                completedQuests: completedQuests
+            )
+        }
         advanceCurriculumPastLevel(at: index, subject: subject)
         persistCurriculum()
     }
@@ -403,6 +411,27 @@ final class ProgressStore: ObservableObject {
         curriculumLevelRecords[subject] = subjectRecords
     }
 
+    private func grantCurriculumCompletionRewards(
+        for level: CurriculumLevel,
+        subject: CurriculumSubject,
+        completedQuests: Int
+    ) {
+        do {
+            let learningSubject = subject.learningSubject
+            objectWillChange.send()
+            let progress = try subjectProgress(for: learningSubject)
+            progress.totalSessions += 1
+            let masteryQuestCount = max(completedQuests, level.questsRequiredForMastery)
+            let bonusCorrect = Int32(masteryQuestCount * 4)
+            progress.totalCorrectAnswers += bonusCorrect
+            try context.save()
+        } catch {
+            #if DEBUG
+            print("Failed to grant curriculum rewards: \(error)")
+            #endif
+        }
+    }
+
     private func advanceCurriculumPastLevel(at index: Int, subject: CurriculumSubject) {
         let levels = CurriculumCatalog.subjectPath(for: subject).levels
         let current = curriculumHighestUnlockedIndex[subject] ?? 0
@@ -476,6 +505,18 @@ final class ProgressStore: ObservableObject {
                 placementGrade: nil,
                 levelRecords: Dictionary(uniqueKeysWithValues: CurriculumSubject.allCases.map { ($0, [:]) })
             )
+        }
+    }
+}
+
+private extension CurriculumSubject {
+    var learningSubject: LearningSubject {
+        switch self {
+        case .math:
+            return .math
+        case .language, .science, .social:
+            // Currency is unified for now, so credit toward the core math subject ledger.
+            return .math
         }
     }
 }
