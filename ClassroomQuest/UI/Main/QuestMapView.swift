@@ -1635,14 +1635,20 @@ private struct DragMatchChallengeView: View {
         assignments.values.contains { $0.caseInsensitiveCompare(answer) == .orderedSame }
     }
 
+    private var tokenColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 140), spacing: 12)]
+    }
+
     private var tokensView: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVGrid(columns: tokenColumns, alignment: .center, spacing: 12) {
                 ForEach(availableAnswers, id: \.self) { answer in
                     tokenView(for: answer)
                 }
             }
             .padding(.horizontal, 8)
+            .padding(.top, 4)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollDisabled(true)
     }
@@ -1654,7 +1660,7 @@ private struct DragMatchChallengeView: View {
             .font(.cqBody1)
             .padding(.vertical, 10)
             .padding(.horizontal, 18)
-            .frame(minWidth: 72, maxWidth: 180, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .background(
                 Capsule()
                     .fill(Color.white.opacity(isAssigned ? 0.35 : 0.9))
