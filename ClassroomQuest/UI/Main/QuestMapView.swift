@@ -1331,7 +1331,6 @@ struct QuestActivityRunner: View {
     let subject: CurriculumSubject
     let onComplete: (Bool) -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
     @State private var currentIndex = 0
     @State private var feedback: ChallengeFeedback?
@@ -1383,7 +1382,6 @@ struct QuestActivityRunner: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") {
                     reportResult(success: false)
-                    dismiss()
                 }
             }
         }
@@ -1439,7 +1437,6 @@ struct QuestActivityRunner: View {
 
             Button {
                 reportResult(success: true)
-                dismiss()
             } label: {
                 Text("Return to Level")
                     .font(.cqBody1)

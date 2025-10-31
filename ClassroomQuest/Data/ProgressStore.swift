@@ -243,10 +243,40 @@ final class ProgressStore: ObservableObject {
     func curriculumStatus(for level: CurriculumLevel, subject: CurriculumSubject) -> CurriculumLevelStatus {
         let levels = CurriculumCatalog.subjectPath(for: subject).levels
         guard let index = levels.firstIndex(of: level) else { return .locked }
-        let unlockedIndex = curriculumHighestUnlockedIndex[subject] ?? 0
-        if unlockedIndex >= levels.count { return .completed }
-        if index < unlockedIndex { return .completed }
-        if index == unlockedIndex { return .current }
+
+        if isCurriculumLevelCompleted(level, subject: subject) {
+            return .completed
+        }
+
+        guard !levels.isEmpty else { return .locked }
+
+        var effectiveUnlocked = max(curriculumHighestUnlockedIndex[subject] ?? 0, 0)
+        var sequentialCompletionIndex = -1
+        for candidateIndex in 0..<levels.count {
+            if isCurriculumLevelCompleted(levels[candidateIndex], subject: subject) {
+                sequentialCompletionIndex = candidateIndex
+            } else {
+                break
+            }
+        }
+
+        if levels.count > 0 {
+            let sequentialUnlockIndex = min(sequentialCompletionIndex + 1, levels.count - 1)
+            effectiveUnlocked = max(effectiveUnlocked, sequentialUnlockIndex)
+        }
+
+        let accessibleUpperBound = min(effectiveUnlocked, levels.count - 1)
+
+        if accessibleUpperBound < 0 || index > accessibleUpperBound {
+            return .locked
+        }
+
+        if let pendingIndex = (0...accessibleUpperBound).first(where: { candidate in
+            !isCurriculumLevelCompleted(levels[candidate], subject: subject)
+        }) {
+            return index == pendingIndex ? .current : .locked
+        }
+
         return .locked
     }
 
@@ -259,17 +289,18 @@ final class ProgressStore: ObservableObject {
         let levels = CurriculumCatalog.subjectPath(for: subject).levels
         guard let index = levels.firstIndex(of: level) else { return }
         let wasAlreadyCompleted = curriculumStatus(for: level, subject: subject) == .completed
+        let normalizedCompleted = normalizedCompletedQuestCount(completedQuests, for: level)
         registerCurriculumAttempt(
             for: level,
             subject: subject,
-            completedQuests: completedQuests,
+            completedQuests: normalizedCompleted,
             assisted: assisted
         )
         if !wasAlreadyCompleted {
             grantCurriculumCompletionRewards(
                 for: level,
                 subject: subject,
-                completedQuests: completedQuests
+                completedQuests: normalizedCompleted
             )
         }
         advanceCurriculumPastLevel(at: index, subject: subject)
@@ -313,7 +344,8 @@ final class ProgressStore: ObservableObject {
         subject: CurriculumSubject,
         completedQuests: Int
     ) {
-        registerCurriculumAttempt(for: level, subject: subject, completedQuests: completedQuests, assisted: false)
+        let normalizedCompleted = normalizedCompletedQuestCount(completedQuests, for: level)
+        registerCurriculumAttempt(for: level, subject: subject, completedQuests: normalizedCompleted, assisted: false)
         persistCurriculum()
     }
 
@@ -346,24 +378,24 @@ final class ProgressStore: ObservableObject {
         }
 
         var completedLevels = 0
-        var bestFractionTowardNext: Double = 0
+        var progressFractions: [Double] = []
 
         for subject in CurriculumSubject.allCases {
             let path = CurriculumCatalog.subjectPath(for: subject)
-            let unlocked = min(curriculumHighestUnlockedIndex[subject] ?? 0, path.levels.count)
-            completedLevels += min(unlocked, path.levels.count)
+            for level in path.levels {
+                if isCurriculumLevelCompleted(level, subject: subject) {
+                    completedLevels += 1
+                    continue
+                }
 
-            guard unlocked < path.levels.count else { continue }
-            let currentLevel = path.levels[unlocked]
-            let record = curriculumLevelRecords[subject]?[currentLevel.id]
-            let required = max(1, currentLevel.questsRequiredForMastery)
-            let fraction = min(1, max(0, Double(record?.bestCompletedQuestCount ?? 0) / Double(required)))
-            bestFractionTowardNext = max(bestFractionTowardNext, fraction)
+                progressFractions.append(progressFraction(for: level, subject: subject))
+                break
+            }
         }
 
         let cappedCompleted = min(totalLevels, completedLevels)
         let levelNumber = cappedCompleted + 1
-        let progressToNext = cappedCompleted >= totalLevels ? 1 : bestFractionTowardNext
+        let progressToNext = cappedCompleted >= totalLevels ? 1 : (progressFractions.max() ?? 0)
 
         return CurriculumOverallProgress(
             level: levelNumber,
@@ -435,11 +467,37 @@ final class ProgressStore: ObservableObject {
     private func advanceCurriculumPastLevel(at index: Int, subject: CurriculumSubject) {
         let levels = CurriculumCatalog.subjectPath(for: subject).levels
         let current = curriculumHighestUnlockedIndex[subject] ?? 0
-        guard current <= index else { return }
         let nextIndex = min(index + 1, levels.count)
-        if nextIndex != current {
+        if nextIndex > current {
             curriculumHighestUnlockedIndex[subject] = nextIndex
         }
+    }
+
+    private func normalizedCompletedQuestCount(_ completedQuests: Int, for level: CurriculumLevel) -> Int {
+        let threshold = completionThreshold(for: level)
+        let upperBound = max(threshold, level.quests.count)
+        return max(0, min(completedQuests, upperBound))
+    }
+
+    private func isCurriculumLevelCompleted(_ level: CurriculumLevel, subject: CurriculumSubject) -> Bool {
+        guard let record = curriculumLevelRecords[subject]?[level.id] else { return false }
+        if record.assistedUnlock { return true }
+        return record.bestCompletedQuestCount >= completionThreshold(for: level)
+    }
+
+    private func completionThreshold(for level: CurriculumLevel) -> Int {
+        if level.questsRequiredForMastery <= 0 {
+            return level.quests.isEmpty ? 0 : 1
+        }
+        return level.questsRequiredForMastery
+    }
+
+    private func progressFraction(for level: CurriculumLevel, subject: CurriculumSubject) -> Double {
+        guard let record = curriculumLevelRecords[subject]?[level.id] else { return 0 }
+        let threshold = Double(completionThreshold(for: level))
+        guard threshold > 0 else { return 0 }
+        let completed = Double(min(record.bestCompletedQuestCount, Int(threshold)))
+        return max(0, min(1, completed / threshold))
     }
 
     private static func loadCurriculumState(userDefaults: UserDefaults) -> (
