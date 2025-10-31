@@ -784,10 +784,25 @@ private struct CurriculumLevelPlayView: View {
 }
 
 
+struct DragMatchPair: Identifiable, Hashable {
+    let id: UUID
+    let prompt: String
+    let answer: String
+    let symbolName: String?
+
+    init(id: UUID = UUID(), prompt: String, answer: String, symbolName: String? = nil) {
+        self.id = id
+        self.prompt = prompt
+        self.answer = answer
+        self.symbolName = symbolName
+    }
+}
+
 struct QuestChallenge: Identifiable, Equatable {
     enum Kind: Equatable {
         case counting(symbol: String, quantity: Int)
         case multipleChoice(options: [String], correctIndex: Int)
+        case dragMatch(pairs: [DragMatchPair])
     }
 
     let id = UUID()
@@ -808,9 +823,9 @@ enum QuestActivityFactory {
         case .language:
             return languageChallenges(for: quest, grade: level.grade)
         case .science:
-            return scienceChallenges(for: quest)
+            return scienceChallenges(for: quest, grade: level.grade)
         case .social:
-            return socialChallenges(for: quest)
+            return socialChallenges(for: quest, grade: level.grade)
         }
     }
 
@@ -829,6 +844,10 @@ enum QuestActivityFactory {
 
     private static func mathChallenges(for quest: CurriculumQuest, grade: CurriculumGrade) -> [QuestChallenge] {
         let normalized = normalizedText(from: quest)
+
+        if (grade == .preK || grade == .kindergarten), normalized.contains("shape") {
+            return shapeMatchDragChallenges()
+        }
 
         if normalized.contains("count") {
             return countingChallenges(symbols: ["ladybug.fill", "leaf.fill", "star.fill"], range: 3...9)
@@ -868,6 +887,10 @@ enum QuestActivityFactory {
     private static func languageChallenges(for quest: CurriculumQuest, grade: CurriculumGrade) -> [QuestChallenge] {
         let normalized = normalizedText(from: quest)
 
+        if (grade == .preK || grade == .kindergarten), normalized.contains("letter") || normalized.contains("sound") || normalized.contains("phon") {
+            return phonicsDragMatchChallenges()
+        }
+
         if normalized.contains("letter") || normalized.contains("alphabet") || normalized.contains("phon") {
             return letterSoundChallenges()
         }
@@ -887,8 +910,14 @@ enum QuestActivityFactory {
         return vocabularyChallenges()
     }
 
-    private static func scienceChallenges(for quest: CurriculumQuest) -> [QuestChallenge] {
+    private static func scienceChallenges(for quest: CurriculumQuest, grade: CurriculumGrade) -> [QuestChallenge] {
         let normalized = normalizedText(from: quest)
+
+        if grade == .preK || grade == .kindergarten {
+            if normalized.contains("sense") || normalized.contains("sound") {
+                return sensesDragMatchChallenges()
+            }
+        }
 
         if normalized.contains("plant") || normalized.contains("animal") || normalized.contains("habitat") {
             return lifeScienceChallenges()
@@ -909,8 +938,14 @@ enum QuestActivityFactory {
         return lifeScienceChallenges()
     }
 
-    private static func socialChallenges(for quest: CurriculumQuest) -> [QuestChallenge] {
+    private static func socialChallenges(for quest: CurriculumQuest, grade: CurriculumGrade) -> [QuestChallenge] {
         let normalized = normalizedText(from: quest)
+
+        if grade == .preK || grade == .kindergarten {
+            if normalized.contains("share") || normalized.contains("kind") || normalized.contains("feel") {
+                return feelingsDragMatchChallenges()
+            }
+        }
 
         if normalized.contains("share") || normalized.contains("kind") || normalized.contains("feel") || normalized.contains("empathy") {
             return empathyChallenges()
@@ -944,6 +979,21 @@ enum QuestActivityFactory {
                 kind: .counting(symbol: symbol, quantity: quantity)
             )
         }
+    }
+
+    private static func shapeMatchDragChallenges() -> [QuestChallenge] {
+        let pairs: [DragMatchPair] = [
+            DragMatchPair(prompt: "Triangle", answer: "Triangle", symbolName: "triangle.fill"),
+            DragMatchPair(prompt: "Square", answer: "Square", symbolName: "square.fill"),
+            DragMatchPair(prompt: "Circle", answer: "Circle", symbolName: "circle.fill"),
+            DragMatchPair(prompt: "Star", answer: "Star", symbolName: "star.fill")
+        ]
+
+        let randomized = pairs.shuffled()
+        return [QuestChallenge(
+            prompt: "Drag each shape name to the matching picture.",
+            kind: .dragMatch(pairs: randomized)
+        )]
     }
 
     private static func patternChallenges() -> [QuestChallenge] {
@@ -1045,6 +1095,21 @@ enum QuestActivityFactory {
         }
     }
 
+    private static func phonicsDragMatchChallenges() -> [QuestChallenge] {
+        let pairs: [DragMatchPair] = [
+            DragMatchPair(prompt: "🍎 Apple", answer: "A"),
+            DragMatchPair(prompt: "🧢 Cap", answer: "C"),
+            DragMatchPair(prompt: "🦁 Lion", answer: "L"),
+            DragMatchPair(prompt: "🌞 Sun", answer: "S")
+        ]
+
+        let randomized = pairs.shuffled()
+        return [QuestChallenge(
+            prompt: "Drag each letter to the picture that starts with that sound.",
+            kind: .dragMatch(pairs: randomized)
+        )]
+    }
+
     private static func letterSoundChallenges() -> [QuestChallenge] {
         let prompts = [
             ("Which word begins with the letter B?", "Ball", ["Cat", "Fish", "Orange"]),
@@ -1093,6 +1158,21 @@ enum QuestActivityFactory {
         }
     }
 
+    private static func sensesDragMatchChallenges() -> [QuestChallenge] {
+        let pairs: [DragMatchPair] = [
+            DragMatchPair(prompt: "👃 Smell", answer: "Flower"),
+            DragMatchPair(prompt: "👂 Hear", answer: "Bell"),
+            DragMatchPair(prompt: "👀 See", answer: "Rainbow"),
+            DragMatchPair(prompt: "🤚 Touch", answer: "Feather")
+        ]
+
+        let randomized = pairs.shuffled()
+        return [QuestChallenge(
+            prompt: "Match each sense to something you might explore on a nature walk.",
+            kind: .dragMatch(pairs: randomized)
+        )]
+    }
+
     private static func lifeScienceChallenges() -> [QuestChallenge] {
         let prompts = [
             ("What do plants need to make food?", "Sunlight", ["Moonlight", "Sand", "Smoke"]),
@@ -1139,6 +1219,21 @@ enum QuestActivityFactory {
         return prompts.map { prompt, correct, distractors in
             multipleChoiceChallenge(prompt: prompt, correct: correct, distractors: distractors)
         }
+    }
+
+    private static func feelingsDragMatchChallenges() -> [QuestChallenge] {
+        let pairs: [DragMatchPair] = [
+            DragMatchPair(prompt: "😊 Happy", answer: "Share a smile"),
+            DragMatchPair(prompt: "😢 Sad", answer: "Offer a hug"),
+            DragMatchPair(prompt: "😠 Frustrated", answer: "Take deep breaths"),
+            DragMatchPair(prompt: "😲 Surprised", answer: "Say 'Wow!' together")
+        ]
+
+        let randomized = pairs.shuffled()
+        return [QuestChallenge(
+            prompt: "Match the feeling face to a kind response.",
+            kind: .dragMatch(pairs: randomized)
+        )]
     }
 
     private static func empathyChallenges() -> [QuestChallenge] {
@@ -1335,6 +1430,14 @@ struct QuestActivityRunner: View {
             feedback = ChallengeFeedback(text: isCorrect ? "Great job!" : "Try again.", isPositive: isCorrect)
         }
 
+        if isCorrect {
+            PlayfulHaptics.success()
+            SpeechCoach.shared.celebrateSuccess()
+        } else {
+            PlayfulHaptics.warning()
+            SpeechCoach.shared.encourageRetry()
+        }
+
         guard isCorrect else { return }
 
         if currentIndex < challenges.count - 1 {
@@ -1349,6 +1452,8 @@ struct QuestActivityRunner: View {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.9)) {
                     isComplete = true
                     feedback = ChallengeFeedback(text: "Level objective cleared!", isPositive: true)
+                    PlayfulHaptics.success()
+                    SpeechCoach.shared.celebrateSuccess()
                 }
             }
         }
@@ -1358,6 +1463,7 @@ struct QuestActivityRunner: View {
         guard !hasReportedResult else { return }
         hasReportedResult = true
         onComplete(success)
+        SpeechCoach.shared.stop()
     }
 }
 
@@ -1379,6 +1485,8 @@ private struct QuestChallengeView: View {
                 countingView(symbol: symbol, quantity: quantity)
             case .multipleChoice(let options, let correctIndex):
                 multipleChoiceView(options: options, correctIndex: correctIndex)
+            case .dragMatch(let pairs):
+                DragMatchChallengeView(pairs: pairs, onValidated: onValidated)
             }
         }
         .padding(24)
@@ -1445,6 +1553,171 @@ private struct QuestChallengeView: View {
 
     private func resetInputs() {
         numberAnswer = 0
+        SpeechCoach.shared.presentPrompt(challenge.prompt)
+    }
+}
+
+private struct DragMatchChallengeView: View {
+    let pairs: [DragMatchPair]
+    let onValidated: (Bool) -> Void
+
+    @State private var assignments: [UUID: String] = [:]
+    @State private var highlightedTargets: Set<UUID> = []
+
+    private var allAssigned: Bool {
+        pairs.allSatisfy { assignments[$0.id] != nil }
+    }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            tokensView
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                ForEach(pairs) { pair in
+                    dropCard(for: pair)
+                }
+            }
+
+            Button {
+                checkMatches()
+            } label: {
+                Text("Check Matches")
+                    .font(.cqBody1)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!allAssigned)
+        }
+        .onAppear {
+            assignments.removeAll()
+            highlightedTargets.removeAll()
+        }
+    }
+
+    private var availableAnswers: [String] {
+        pairs.map { $0.answer }
+    }
+
+    private func isAnswerAssigned(_ answer: String) -> Bool {
+        assignments.values.contains { $0.caseInsensitiveCompare(answer) == .orderedSame }
+    }
+
+    private var tokensView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(availableAnswers, id: \.self) { answer in
+                    Text(answer)
+                        .font(.cqBody1)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(isAnswerAssigned(answer) ? 0.35 : 0.9))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(CQTheme.bluePrimary.opacity(isAnswerAssigned(answer) ? 0.3 : 0.8), lineWidth: 1.5)
+                        )
+                        .foregroundStyle(CQTheme.textPrimary)
+                        .draggable(answer)
+                        .opacity(isAnswerAssigned(answer) ? 0.55 : 1)
+                }
+            }
+            .padding(.horizontal, 8)
+        }
+    }
+
+    private func dropCard(for pair: DragMatchPair) -> some View {
+        let assignedText = assignments[pair.id]
+        let isHighlighted = highlightedTargets.contains(pair.id)
+
+        return VStack(spacing: 12) {
+            if let symbolName = pair.symbolName {
+                Image(systemName: symbolName)
+                    .font(.system(size: 36))
+                    .foregroundStyle(CQTheme.yellowAccent)
+            }
+
+            Text(pair.prompt)
+                .font(.cqBody2)
+                .foregroundStyle(CQTheme.textSecondary)
+                .multilineTextAlignment(.center)
+
+            if let assignedText {
+                HStack {
+                    Text(assignedText)
+                        .font(.cqBody1)
+                        .foregroundStyle(CQTheme.textPrimary)
+                    Spacer()
+                    Button {
+                        removeAssignment(for: pair)
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(CQTheme.purpleLanguage)
+                }
+            } else {
+                Text("Drag a match here")
+                    .font(.cqCaption)
+                    .foregroundStyle(CQTheme.textSecondary.opacity(0.7))
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(isHighlighted ? CQTheme.bluePrimary.opacity(0.2) : CQTheme.cardBackground.opacity(0.95))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(isHighlighted ? CQTheme.bluePrimary : Color.clear, lineWidth: 2)
+        )
+        .dropDestination(for: String.self) { items, _ in
+            guard let first = items.first else { return false }
+            assign(answer: first, to: pair)
+            return true
+        } isTargeted: { isTargeted in
+            if isTargeted {
+                highlightedTargets.insert(pair.id)
+            } else {
+                highlightedTargets.remove(pair.id)
+            }
+        }
+    }
+
+    private func assign(answer: String, to pair: DragMatchPair) {
+        let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        if let existing = assignments.first(where: { $0.value.caseInsensitiveCompare(trimmed) == .orderedSame })?.key {
+            assignments.removeValue(forKey: existing)
+        }
+
+        assignments[pair.id] = trimmed
+        PlayfulHaptics.lightImpact()
+    }
+
+    private func removeAssignment(for pair: DragMatchPair) {
+        assignments.removeValue(forKey: pair.id)
+        PlayfulHaptics.lightImpact()
+    }
+
+    private func checkMatches() {
+        let success = pairs.allSatisfy { pair in
+            guard let assigned = assignments[pair.id] else { return false }
+            return assigned.caseInsensitiveCompare(pair.answer) == .orderedSame
+        }
+
+        if success {
+            PlayfulHaptics.success()
+            SpeechCoach.shared.celebrateSuccess()
+        } else {
+            PlayfulHaptics.warning()
+            SpeechCoach.shared.encourageRetry()
+        }
+
+        onValidated(success)
     }
 }
 
