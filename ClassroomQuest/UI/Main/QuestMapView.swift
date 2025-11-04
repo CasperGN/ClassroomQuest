@@ -278,7 +278,7 @@ struct QuestMapView: View {
         case .locked: return "lock.fill"
         case .current: return "star.fill"
         case .available: return "play.circle"
-        case .completed: return "play.circle"
+        case .completed: return "checkmark.seal.fill"
         }
     }
 
@@ -287,7 +287,7 @@ struct QuestMapView: View {
         case .locked: return CQTheme.textSecondary
         case .current: return subject.accentColor
         case .available: return subject.accentColor.opacity(0.75)
-        case .completed: return subject.accentColor.opacity(0.75)
+        case .completed: return CQTheme.greenSecondary
         }
     }
 
