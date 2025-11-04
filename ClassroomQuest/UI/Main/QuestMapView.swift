@@ -1056,35 +1056,138 @@ enum QuestActivityFactory {
     }
 
     private static func patternChallenges() -> [QuestChallenge] {
-        let patterns: [(String, String, [String])] = [
-            ("🔵 🔺 🔵 🔺", "🔵", ["🔵", "🔺", "🟢"]),
-            ("🐸 🦋 🐸 🦋", "🐸", ["🐸", "🦋", "🐝"]),
-            ("🍎 🍎 🍐 🍎 🍎", "🍐", ["🍐", "🍎", "🍊"])
+        var usedSequences = Set<String>()
+        let kinds = PatternKind.allCases.shuffled()
+
+        return kinds.prefix(3).map { kind in
+            generatePatternChallenge(for: kind, usedSequences: &usedSequences)
+        }
+    }
+
+    private enum PatternKind: CaseIterable {
+        case alternating
+        case doubledEnding
+        case tripleCycle
+    }
+
+    private static func generatePatternChallenge(for kind: PatternKind, usedSequences: inout Set<String>) -> QuestChallenge {
+        let symbolPool = [
+            "🔵", "🔴", "🟢", "🟡", "🟣", "🟠", "⭐️", "🔺", "🔶", "🟩", "⚫️", "⚪️"
         ]
 
-        return patterns.map { sequence, correct, options in
-            multipleChoiceChallenge(
-                prompt: "What comes next in this pattern? \(sequence)",
+        var attempts = 0
+        while true {
+            var symbols = symbolPool.shuffled()
+            let sequence: String
+            let correct: String
+            var distractorPool = Set<String>()
+
+            switch kind {
+            case .alternating:
+                let first = symbols.removeFirst()
+                let second = symbols.removeFirst()
+                sequence = "\(first) \(second) \(first) \(second) \(first) \(second)"
+                correct = first
+                distractorPool.formUnion([second])
+            case .doubledEnding:
+                let first = symbols.removeFirst()
+                let second = symbols.removeFirst()
+                sequence = "\(first) \(second) \(second) \(first) \(second)"
+                correct = second
+                distractorPool.formUnion([first])
+            case .tripleCycle:
+                let first = symbols.removeFirst()
+                let second = symbols.removeFirst()
+                let third = symbols.removeFirst()
+                sequence = "\(first) \(second) \(third) \(first) \(second) \(third)"
+                correct = first
+                distractorPool.formUnion([second, third])
+            }
+
+            while distractorPool.count < 3, let next = symbols.popLast() {
+                if next != correct {
+                    distractorPool.insert(next)
+                }
+            }
+
+            distractorPool.remove(correct)
+
+            let key = "\(sequence)|\(correct)"
+            if usedSequences.insert(key).inserted || attempts > 5 {
+                let distractors = Array(distractorPool).shuffled()
+                return multipleChoiceChallenge(
+                    prompt: "What comes next in this pattern? \(sequence)",
+                    correct: correct,
+                    distractors: Array(distractors.prefix(3))
+                )
+            }
+
+            attempts += 1
+        }
+    }
+
+    private static func comparisonChallenges() -> [QuestChallenge] {
+        var usedPairs = Set<String>()
+        let outcomes = ComparisonOutcome.allCases.shuffled()
+
+        return outcomes.map { outcome in
+            let pair = generateComparisonPair(for: outcome, usedPairs: &usedPairs)
+            let prompt = "Which statement is true about \(pair.left) and \(pair.right)?"
+            let correct = outcome.correctAnswer(left: pair.left, right: pair.right)
+            let options = [
+                "\(pair.left) is greater",
+                "\(pair.right) is greater",
+                "They are equal"
+            ]
+
+            return multipleChoiceChallenge(
+                prompt: prompt,
                 correct: correct,
                 distractors: options.filter { $0 != correct }
             )
         }
     }
 
-    private static func comparisonChallenges() -> [QuestChallenge] {
-        let comparisons: [(Int, Int, String)] = [
-            (4, 7, "7 is greater"),
-            (9, 3, "9 is greater"),
-            (5, 5, "They are equal")
-        ]
+    private enum ComparisonOutcome: CaseIterable {
+        case leftGreater
+        case rightGreater
+        case equal
 
-        return comparisons.map { left, right, answer in
-            let prompt = "Which statement is true about \(left) and \(right)?"
-            return multipleChoiceChallenge(
-                prompt: prompt,
-                correct: answer,
-                distractors: ["\(left) is greater", "\(right) is greater", "They are equal"].filter { $0 != answer }
-            )
+        fileprivate func correctAnswer(left: Int, right: Int) -> String {
+            switch self {
+            case .leftGreater:
+                return "\(left) is greater"
+            case .rightGreater:
+                return "\(right) is greater"
+            case .equal:
+                return "They are equal"
+            }
+        }
+    }
+
+    private static func generateComparisonPair(for outcome: ComparisonOutcome, usedPairs: inout Set<String>) -> (left: Int, right: Int) {
+        var attempts = 0
+        while true {
+            let pair: (left: Int, right: Int)
+            switch outcome {
+            case .leftGreater:
+                let right = Int.random(in: 0...9)
+                let left = Int.random(in: (right + 1)...10)
+                pair = (left, right)
+            case .rightGreater:
+                let left = Int.random(in: 0...9)
+                let right = Int.random(in: (left + 1)...10)
+                pair = (left, right)
+            case .equal:
+                let value = Int.random(in: 0...10)
+                pair = (value, value)
+            }
+
+            let key = "\(pair.left)-\(pair.right)"
+            if usedPairs.insert(key).inserted || attempts > 10 {
+                return pair
+            }
+            attempts += 1
         }
     }
 
@@ -1143,14 +1246,89 @@ enum QuestActivityFactory {
     }
 
     private static func fractionChallenges() -> [QuestChallenge] {
-        let prompts = [
-            ("Half of a pizza is", "1/2", ["1/3", "2/2", "3/4"]),
-            ("Which shows a quarter?", "1/4", ["4/4", "1/3", "2/4"]),
-            ("Two equal parts make", "halves", ["thirds", "quarters", "fifths"])
-        ]
+        return (0..<3).map { _ in
+            let problem = generateFractionProblem()
+            return multipleChoiceChallenge(prompt: problem.prompt, correct: problem.correct, distractors: problem.distractors)
+        }
+    }
 
-        return prompts.map { prompt, correct, distractors in
-            multipleChoiceChallenge(prompt: prompt, correct: correct, distractors: distractors)
+    private struct FractionProblem {
+        let prompt: String
+        let correct: String
+        let distractors: [String]
+    }
+
+    private enum FractionProblemKind: CaseIterable {
+        case partOfWhole
+        case equivalent
+    }
+
+    private static func generateFractionProblem() -> FractionProblem {
+        let kind = FractionProblemKind.allCases.randomElement() ?? .partOfWhole
+        switch kind {
+        case .partOfWhole:
+            let denominators = [2, 3, 4, 5, 6, 8]
+            let foods = ["pizza", "cake", "pie", "sandwich", "fruit tart", "quiche"]
+            let denominator = denominators.randomElement() ?? 2
+            let numerator = Int.random(in: 1..<denominator)
+            let item = foods.randomElement() ?? "pizza"
+            let prompt = "A \(item) is cut into \(denominator) equal pieces. If you eat \(numerator) piece\(numerator == 1 ? "" : "s"), what fraction did you eat?"
+
+            let correct = "\(numerator)/\(denominator)"
+            var distractors = Set<String>()
+
+            func addCandidate(_ value: String) {
+                if value != correct {
+                    distractors.insert(value)
+                }
+            }
+
+            let incorrectNumerators = [max(1, numerator - 1), min(denominator - 1, numerator + 1)]
+            incorrectNumerators.forEach { addCandidate("\($0)/\(denominator)") }
+            addCandidate("\(denominator - numerator)/\(denominator)")
+            addCandidate("\(numerator)/\(denominator + 1)")
+
+            while distractors.count < 3 {
+                let randomNumerator = Int.random(in: 1..<denominator)
+                let randomDenominator = denominators.randomElement() ?? (denominator + 1)
+                addCandidate("\(randomNumerator)/\(randomDenominator)")
+            }
+
+            return FractionProblem(
+                prompt: prompt,
+                correct: correct,
+                distractors: Array(distractors.prefix(3))
+            )
+        case .equivalent:
+            let denominator = Int.random(in: 2...8)
+            let numerator = Int.random(in: 1..<denominator)
+            let factor = Int.random(in: 2...4)
+            let prompt = "Which fraction is equivalent to \(numerator)/\(denominator)?"
+
+            var distractors = Set<String>()
+            let correct = "\(numerator * factor)/\(denominator * factor)"
+
+            func addCandidate(_ value: String) {
+                if value != correct {
+                    distractors.insert(value)
+                }
+            }
+
+            addCandidate("\(numerator)/\(denominator + factor)")
+            addCandidate("\((numerator + factor))/\(denominator)")
+            addCandidate("\(max(1, numerator - 1))/\(denominator)")
+            addCandidate("\(numerator * factor)/\(denominator)")
+
+            while distractors.count < 3 {
+                let randomNumerator = Int.random(in: 1..<denominator)
+                addCandidate("\(randomNumerator)/\(denominator)")
+            }
+
+            return FractionProblem(
+                prompt: prompt,
+                correct: correct,
+                distractors: Array(distractors.prefix(3))
+            )
         }
     }
 

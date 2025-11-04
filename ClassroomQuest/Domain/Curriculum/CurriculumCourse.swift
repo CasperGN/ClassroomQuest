@@ -34,7 +34,7 @@ struct CurriculumLevel: Identifiable, Hashable {
         self.grade = grade
         self.focus = focus
         self.overview = overview
-        self.questsRequiredForMastery = questsRequiredForMastery
+        self.questsRequiredForMastery = max(questsRequiredForMastery, quests.count)
         self.quests = quests
         self.reward = reward
     }
