@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     @AppStorage("placementGradeBand") private var placementGradeRaw: String = ""
     @AppStorage("curriculumPlacementGrade") private var curriculumPlacementRaw: String = CurriculumGrade.preK.rawValue
+    @AppStorage("questVoiceAssistEnabled") private var isVoiceAssistEnabled = false
     @State private var selectedGrade: GradeBand = .grade2
     @State private var selectedCurriculumGrade: CurriculumGrade = .preK
 
@@ -33,6 +34,17 @@ struct SettingsView: View {
                     Text("Parent dashboards arrive in a later release.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+
+                Section("Audio Assistance") {
+                    Toggle(isOn: $isVoiceAssistEnabled) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Voice prompts")
+                            Text("Have ClassroomQuest read activity prompts and feedback aloud automatically.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section("Initial Placement") {
