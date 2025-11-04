@@ -1072,19 +1072,67 @@ enum QuestActivityFactory {
     }
 
     private static func comparisonChallenges() -> [QuestChallenge] {
-        let comparisons: [(Int, Int, String)] = [
-            (4, 7, "7 is greater"),
-            (9, 3, "9 is greater"),
-            (5, 5, "They are equal")
-        ]
+        var usedPairs = Set<String>()
+        let outcomes = ComparisonOutcome.allCases.shuffled()
 
-        return comparisons.map { left, right, answer in
-            let prompt = "Which statement is true about \(left) and \(right)?"
+        return outcomes.map { outcome in
+            let pair = generateComparisonPair(for: outcome, usedPairs: &usedPairs)
+            let prompt = "Which statement is true about \(pair.left) and \(pair.right)?"
+            let correct = outcome.correctAnswer(left: pair.left, right: pair.right)
+            let options = [
+                "\(pair.left) is greater",
+                "\(pair.right) is greater",
+                "They are equal"
+            ]
+
             return multipleChoiceChallenge(
                 prompt: prompt,
-                correct: answer,
-                distractors: ["\(left) is greater", "\(right) is greater", "They are equal"].filter { $0 != answer }
+                correct: correct,
+                distractors: options.filter { $0 != correct }
             )
+        }
+    }
+
+    private enum ComparisonOutcome: CaseIterable {
+        case leftGreater
+        case rightGreater
+        case equal
+
+        fileprivate func correctAnswer(left: Int, right: Int) -> String {
+            switch self {
+            case .leftGreater:
+                return "\(left) is greater"
+            case .rightGreater:
+                return "\(right) is greater"
+            case .equal:
+                return "They are equal"
+            }
+        }
+    }
+
+    private static func generateComparisonPair(for outcome: ComparisonOutcome, usedPairs: inout Set<String>) -> (left: Int, right: Int) {
+        var attempts = 0
+        while true {
+            let pair: (left: Int, right: Int)
+            switch outcome {
+            case .leftGreater:
+                let right = Int.random(in: 0...9)
+                let left = Int.random(in: (right + 1)...10)
+                pair = (left, right)
+            case .rightGreater:
+                let left = Int.random(in: 0...9)
+                let right = Int.random(in: (left + 1)...10)
+                pair = (left, right)
+            case .equal:
+                let value = Int.random(in: 0...10)
+                pair = (value, value)
+            }
+
+            let key = "\(pair.left)-\(pair.right)"
+            if usedPairs.insert(key).inserted || attempts > 10 {
+                return pair
+            }
+            attempts += 1
         }
     }
 
