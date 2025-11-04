@@ -258,10 +258,8 @@ final class ProgressStore: ObservableObject {
             return .locked
         }
 
-        if let pendingIndex = (0...accessibleUpperBound).first(where: { candidate in
-            !isCurriculumLevelCompleted(levels[candidate], subject: subject)
-        }) {
-            return index == pendingIndex ? .current : .available
+        if index == accessibleUpperBound {
+            return .current
         }
 
         return .available
